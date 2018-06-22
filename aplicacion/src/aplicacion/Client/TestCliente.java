@@ -12,4 +12,6 @@ public class TestCliente {
         ClientGui gui = new ClientGui();
         gui.setVisible(true);
     }
+    
+    // TODO: not recieve messages from server or display them
 }

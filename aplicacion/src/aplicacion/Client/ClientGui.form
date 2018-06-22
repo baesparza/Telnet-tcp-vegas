@@ -73,13 +73,8 @@
                       <Component id="txtPort" alignment="0" min="-2" pref="162" max="-2" attributes="0"/>
                       <Component id="jLabel3" alignment="0" min="-2" max="-2" attributes="0"/>
                   </Group>
-                  <EmptySpace type="separate" max="-2" attributes="0"/>
-                  <Group type="103" groupAlignment="0" attributes="0">
-                      <Component id="jLabel4" alignment="0" min="-2" max="-2" attributes="0"/>
-                      <Component id="cmbEncode" alignment="0" min="-2" pref="162" max="-2" attributes="0"/>
-                  </Group>
-                  <EmptySpace type="separate" max="-2" attributes="0"/>
-                  <Component id="btnConnerct" max="32767" attributes="0"/>
+                  <EmptySpace max="32767" attributes="0"/>
+                  <Component id="btnConnerct" min="-2" pref="159" max="-2" attributes="0"/>
                   <EmptySpace max="-2" attributes="0"/>
               </Group>
           </Group>
@@ -94,15 +89,11 @@
                           <Group type="103" groupAlignment="3" attributes="0">
                               <Component id="jLabel2" alignment="3" min="-2" max="-2" attributes="0"/>
                               <Component id="jLabel3" alignment="3" min="-2" max="-2" attributes="0"/>
-                              <Component id="jLabel4" alignment="3" min="-2" max="-2" attributes="0"/>
                           </Group>
                           <EmptySpace max="-2" attributes="0"/>
                           <Group type="103" groupAlignment="0" attributes="0">
                               <Component id="txtPort" alignment="1" min="-2" pref="20" max="-2" attributes="0"/>
-                              <Group type="103" groupAlignment="3" attributes="0">
-                                  <Component id="txtAddress" alignment="3" min="-2" max="-2" attributes="0"/>
-                                  <Component id="cmbEncode" alignment="3" min="-2" max="-2" attributes="0"/>
-                              </Group>
+                              <Component id="txtAddress" min="-2" max="-2" attributes="0"/>
                           </Group>
                       </Group>
                   </Group>
@@ -125,28 +116,6 @@
           </Properties>
         </Component>
         <Component class="javax.swing.JTextField" name="txtPort">
-        </Component>
-        <Component class="javax.swing.JLabel" name="jLabel4">
-          <Properties>
-            <Property name="text" type="java.lang.String" value="ENCODING"/>
-          </Properties>
-        </Component>
-        <Component class="javax.swing.JComboBox" name="cmbEncode">
-          <Properties>
-            <Property name="model" type="javax.swing.ComboBoxModel" editor="org.netbeans.modules.form.editors2.ComboBoxModelEditor">
-              <StringArray count="6">
-                <StringItem index="0" value="UTF-8"/>
-                <StringItem index="1" value="US-ASCII"/>
-                <StringItem index="2" value="ISO-8859-1"/>
-                <StringItem index="3" value="UFT-16BE"/>
-                <StringItem index="4" value="UFT-16LE"/>
-                <StringItem index="5" value="UFT-16"/>
-              </StringArray>
-            </Property>
-          </Properties>
-          <AuxValues>
-            <AuxValue name="JavaCodeGenerator_TypeParameters" type="java.lang.String" value="&lt;String&gt;"/>
-          </AuxValues>
         </Component>
         <Component class="javax.swing.JButton" name="btnConnerct">
           <Properties>

@@ -5,13 +5,18 @@
  */
 package aplicacion.Client;
 
+import aplicacion.utils.ConsoleLogger;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+
 /**
  *
  * @author bruno
  */
 public class ClientGui extends javax.swing.JFrame {
 
-    Client client;
+    private Client client;
+    private ConsoleLogger console;
 
     private boolean connected;
 
@@ -21,6 +26,7 @@ public class ClientGui extends javax.swing.JFrame {
     public ClientGui() {
         initComponents();
         this.connected = false;
+        console = new ConsoleLogger(txtConsole);
     }
 
     /**
@@ -39,8 +45,6 @@ public class ClientGui extends javax.swing.JFrame {
         txtAddress = new javax.swing.JTextField();
         jLabel3 = new javax.swing.JLabel();
         txtPort = new javax.swing.JTextField();
-        jLabel4 = new javax.swing.JLabel();
-        cmbEncode = new javax.swing.JComboBox<>();
         btnConnerct = new javax.swing.JButton();
         jPanel2 = new javax.swing.JPanel();
         jLabel5 = new javax.swing.JLabel();
@@ -76,10 +80,6 @@ public class ClientGui extends javax.swing.JFrame {
 
         jLabel3.setText("PORT");
 
-        jLabel4.setText("ENCODING");
-
-        cmbEncode.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "UTF-8", "US-ASCII", "ISO-8859-1", "UFT-16BE", "UFT-16LE", "UFT-16" }));
-
         btnConnerct.setText("Connect");
         btnConnerct.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -100,12 +100,8 @@ public class ClientGui extends javax.swing.JFrame {
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(txtPort, javax.swing.GroupLayout.PREFERRED_SIZE, 162, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(jLabel3))
-                .addGap(18, 18, 18)
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jLabel4)
-                    .addComponent(cmbEncode, javax.swing.GroupLayout.PREFERRED_SIZE, 162, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(18, 18, 18)
-                .addComponent(btnConnerct, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addComponent(btnConnerct, javax.swing.GroupLayout.PREFERRED_SIZE, 159, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap())
         );
         jPanel1Layout.setVerticalGroup(
@@ -117,14 +113,11 @@ public class ClientGui extends javax.swing.JFrame {
                     .addGroup(jPanel1Layout.createSequentialGroup()
                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                             .addComponent(jLabel2)
-                            .addComponent(jLabel3)
-                            .addComponent(jLabel4))
+                            .addComponent(jLabel3))
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(txtPort, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 20, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                                .addComponent(txtAddress, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addComponent(cmbEncode, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))))
+                            .addComponent(txtAddress, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))))
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
@@ -347,22 +340,25 @@ public class ClientGui extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void btnConnerctActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnConnerctActionPerformed
-        // Create a new client even when no param were set
-        // TODO: empty textfields
-        this.client = new Client(
-                ("".equals(this.txtAddress.getText())) ? "127.0.0.1" : this.txtAddress.getText(),
-                Integer.parseInt(("".equals(this.txtPort.getText())) ? "23" : this.txtPort.getText()),
-                this.cmbEncode.getSelectedItem().toString(),
-                this.txtOutput
-        );
+        // Create a new client even when no param were provided
+        try {
+            this.client = new Client(
+                    InetAddress.getLocalHost(), //("".equals(this.txtAddress.getText())) ? InetAddress.getLocalHost() : InetAddress.getByName(this.txtAddress.getText()),
+                    Integer.parseInt(("".equals(this.txtPort.getText())) ? "5000" : this.txtPort.getText()),
+                    this.txtOutput,
+                    this.txtConsole
+            );
+            this.connected = this.client.getConnection();
+        } catch (UnknownHostException e) {
+            console.error("Constructing client");
+        }
     }//GEN-LAST:event_btnConnerctActionPerformed
 
     private void btnSendActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSendActionPerformed
         if (this.connected && !"".equals(this.txtCommand.getText())) {
-            this.client.writeMessage(this.txtCommand.getText());
+            this.client.sendMessage(this.txtCommand.getText());
             this.txtInput.append(this.txtCommand.getText() + "\n");
         }
-        this.connected = this.client.getConnection();
     }//GEN-LAST:event_btnSendActionPerformed
 
     /**
@@ -403,11 +399,9 @@ public class ClientGui extends javax.swing.JFrame {
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton btnConnerct;
     private javax.swing.JButton btnSend;
-    private javax.swing.JComboBox<String> cmbEncode;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel3;
-    private javax.swing.JLabel jLabel4;
     private javax.swing.JLabel jLabel5;
     private javax.swing.JLabel jLabel6;
     private javax.swing.JLabel jLabel7;
