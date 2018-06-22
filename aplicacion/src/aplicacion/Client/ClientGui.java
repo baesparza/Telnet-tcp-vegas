@@ -25,6 +25,9 @@ public class ClientGui extends javax.swing.JFrame {
      */
     public ClientGui() {
         initComponents();
+        this.txtConsole.setEditable(false);
+        this.txtInput.setEditable(false);
+        this.txtOutput.setEditable(false);
         this.connected = false;
         console = new ConsoleLogger(txtConsole);
     }
@@ -45,7 +48,7 @@ public class ClientGui extends javax.swing.JFrame {
         txtAddress = new javax.swing.JTextField();
         jLabel3 = new javax.swing.JLabel();
         txtPort = new javax.swing.JTextField();
-        btnConnerct = new javax.swing.JButton();
+        btnConnect = new javax.swing.JButton();
         jPanel2 = new javax.swing.JPanel();
         jLabel5 = new javax.swing.JLabel();
         txtCommand = new javax.swing.JTextField();
@@ -80,10 +83,10 @@ public class ClientGui extends javax.swing.JFrame {
 
         jLabel3.setText("PORT");
 
-        btnConnerct.setText("Connect");
-        btnConnerct.addActionListener(new java.awt.event.ActionListener() {
+        btnConnect.setText("Connect");
+        btnConnect.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnConnerctActionPerformed(evt);
+                btnConnectActionPerformed(evt);
             }
         });
 
@@ -101,7 +104,7 @@ public class ClientGui extends javax.swing.JFrame {
                     .addComponent(txtPort, javax.swing.GroupLayout.PREFERRED_SIZE, 162, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(jLabel3))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addComponent(btnConnerct, javax.swing.GroupLayout.PREFERRED_SIZE, 159, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(btnConnect, javax.swing.GroupLayout.PREFERRED_SIZE, 159, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap())
         );
         jPanel1Layout.setVerticalGroup(
@@ -109,7 +112,6 @@ public class ClientGui extends javax.swing.JFrame {
             .addGroup(jPanel1Layout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
-                    .addComponent(btnConnerct, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addGroup(jPanel1Layout.createSequentialGroup()
                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                             .addComponent(jLabel2)
@@ -117,7 +119,8 @@ public class ClientGui extends javax.swing.JFrame {
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(txtPort, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 20, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(txtAddress, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))))
+                            .addComponent(txtAddress, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                    .addComponent(btnConnect, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
@@ -137,6 +140,7 @@ public class ClientGui extends javax.swing.JFrame {
 
         txtInput.setColumns(20);
         txtInput.setRows(5);
+        txtInput.setWrapStyleWord(true);
         jScrollPane1.setViewportView(txtInput);
 
         javax.swing.GroupLayout jPanel3Layout = new javax.swing.GroupLayout(jPanel3);
@@ -167,6 +171,7 @@ public class ClientGui extends javax.swing.JFrame {
 
         txtOutput.setColumns(20);
         txtOutput.setRows(5);
+        txtOutput.setWrapStyleWord(true);
         jScrollPane2.setViewportView(txtOutput);
 
         javax.swing.GroupLayout jPanel4Layout = new javax.swing.GroupLayout(jPanel4);
@@ -200,6 +205,7 @@ public class ClientGui extends javax.swing.JFrame {
         txtConsole.setForeground(new java.awt.Color(255, 255, 255));
         txtConsole.setLineWrap(true);
         txtConsole.setRows(5);
+        txtConsole.setWrapStyleWord(true);
         jScrollPane3.setViewportView(txtConsole);
 
         javax.swing.GroupLayout jPanel14Layout = new javax.swing.GroupLayout(jPanel14);
@@ -342,7 +348,7 @@ public class ClientGui extends javax.swing.JFrame {
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
-    private void btnConnerctActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnConnerctActionPerformed
+    private void btnConnectActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnConnectActionPerformed
         // Create a new client even when no param were provided
         try {
             this.client = new Client(
@@ -355,16 +361,21 @@ public class ClientGui extends javax.swing.JFrame {
             if (this.connected) {
                 console.info("Successful, Client connected");
             }
+            this.client.start();
         } catch (UnknownHostException e) {
             console.error("Constructing client");
         }
-    }//GEN-LAST:event_btnConnerctActionPerformed
+    }//GEN-LAST:event_btnConnectActionPerformed
 
     private void btnSendActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSendActionPerformed
         if (this.connected && !"".equals(this.txtCommand.getText())) {
             this.client.sendMessage(this.txtCommand.getText());
             this.txtInput.append(this.txtCommand.getText() + "\n");
             this.txtCommand.setText("");
+        } else if (!this.connected) {
+            console.warning("First you need to connect to a server");
+        } else {
+            console.warning("There is no comand to execute");
         }
     }//GEN-LAST:event_btnSendActionPerformed
 
@@ -404,7 +415,7 @@ public class ClientGui extends javax.swing.JFrame {
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JButton btnConnerct;
+    private javax.swing.JButton btnConnect;
     private javax.swing.JButton btnSend;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;

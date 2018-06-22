@@ -1,10 +1,8 @@
 package aplicacion.Client;
 
 import aplicacion.utils.ConsoleLogger;
-import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
@@ -22,8 +20,6 @@ public class Client implements Runnable {
     private final int port;
     private final InetAddress hostname;
     private DatagramSocket socket;
-    private PrintWriter out;
-    private BufferedReader buffer;
     private Thread thread;
 
     private final JTextArea textArea;
@@ -31,11 +27,14 @@ public class Client implements Runnable {
     private boolean connection;
 
     /**
-     * Constructor, set data for connection, initialize variables
+     * Constructor, set data for connection, initialize variables. Create new
+     * socket and add stream input/output that will let us read/write to the
+     * socket
      *
      * @param hostname address of TODO
      * @param port of TODO
      * @param textArea input textArea for write messages
+     * @param txtConsole TODO
      */
     public Client(InetAddress hostname, int port, JTextArea textArea, JTextArea txtConsole) {
         this.hostname = hostname;
@@ -45,23 +44,6 @@ public class Client implements Runnable {
         this.textArea = textArea;
 
         this.connection = false;
-        this.open();
-    }
-
-    /**
-     * Start this thread
-     */
-    public synchronized void start() {
-        thread = new Thread(this);
-        thread.start();
-
-    }
-
-    /**
-     * Create new socket and add stream input/output that will let us read/write
-     * to the socket
-     */
-    public void open() {
         try {
             this.socket = new DatagramSocket();
 
@@ -72,22 +54,32 @@ public class Client implements Runnable {
     }
 
     /**
+     * Start this thread
+     */
+    public synchronized void start() {
+        thread = new Thread(this);
+        thread.start();
+    }
+
+    /**
      * Main loop for application, always listening for packages
      */
     @Override
     public void run() {
-        System.out.println("Listening");
-        try {
-            byte data[] = new byte[100];
-            DatagramPacket packetIN = new DatagramPacket(data, data.length);
-            socket.receive(packetIN); // wait for packagethis.textArea.append("\nPaquete recibido:"
-            this.textArea.append("\nPaquete recibido:"
-                    + "\nDe host: " + packetIN.getAddress()
-                    + "\nPuerto host: " + packetIN.getPort()
-                    + "\nLongitud: " + packetIN.getLength()
-                    + "\nContiene:\n\t" + new String(packetIN.getData(), 0, packetIN.getLength()));
-        } catch (IOException ex) {
-            console.error("Socket recieve packet in");
+        while (this.connection) {
+            try {
+                byte data[] = new byte[100];
+                DatagramPacket packetIN = new DatagramPacket(data, data.length);
+                socket.receive(packetIN); // wait for packagethis.textArea.append("\nPaquete recibido:"
+                this.textArea.append("\nPaquete recibido:"
+                        + "\nDe host: " + packetIN.getAddress()
+                        + "\nPuerto host: " + packetIN.getPort()
+                        + "\nLongitud: " + packetIN.getLength()
+                        + "\nContiene:\n\t" + new String(packetIN.getData(), 0, packetIN.getLength()));
+            } catch (IOException ex) {
+                console.error("Socket recieve packet in");
+            }
+            System.out.println("running");
         }
     }
 
@@ -113,20 +105,6 @@ public class Client implements Runnable {
             }
         } catch (IOException e) {
             console.error("An error ocurred while sending package");
-        }
-    }
-
-    /**
-     * Safely end application
-     */
-    public synchronized void stop() {
-        try {
-            thread.join();
-            this.socket.close();
-            this.out.close();
-            this.buffer.close();
-        } catch (InterruptedException | IOException ex) {
-            System.out.println("Couldn't end application correctly");
         }
     }
 
