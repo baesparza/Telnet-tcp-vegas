@@ -72,59 +72,48 @@ public class Client implements Runnable {
     }
 
     /**
-     * Main loop for application, always listening TODO
+     * Main loop for application, always listening for packages
      */
     @Override
     public void run() {
-        while (true) {
-            try {
-                byte data[] = new byte[100];
-                DatagramPacket packetIN = new DatagramPacket(data, data.length);
-                socket.receive(packetIN); // wait for package
-                this.receiveMessage(packetIN);
-            } catch (IOException ex) {
-                console.error("Socket recieve packet in");
-            }
-        }
-    }
-
-    /**
-     * TODO TODO: InetAddress
-     *
-     * @param message
-     */
-    public void sendMessage(String message) {
+        System.out.println("Listening");
         try {
-
-            byte datos[] = message.getBytes(); // turn into bytes
-            // crea objeto sendPacket
-            DatagramPacket paqueteEnviar = new DatagramPacket(datos, datos.length, this.hostname, this.port);
-            socket.send(paqueteEnviar); // envía el paquete
-            console.info("Paquete enviado\n");
-
-            ByteArrayInputStream bais = new ByteArrayInputStream(message.getBytes());
-            CheckedInputStream cis = new CheckedInputStream(bais, new Adler32());
-            byte readBuffer[] = new byte[5];
-            while (cis.read(readBuffer) >= 0) {
-                long value = cis.getChecksum().getValue();
-                console.info("The value of checksum is " + value + "\n");
-            }
-        } catch (IOException e) {
-            console.error("Ha ocurrido un error TODO");
+            byte data[] = new byte[100];
+            DatagramPacket packetIN = new DatagramPacket(data, data.length);
+            socket.receive(packetIN); // wait for packagethis.textArea.append("\nPaquete recibido:"
+            this.textArea.append("\nPaquete recibido:"
+                    + "\nDe host: " + packetIN.getAddress()
+                    + "\nPuerto host: " + packetIN.getPort()
+                    + "\nLongitud: " + packetIN.getLength()
+                    + "\nContiene:\n\t" + new String(packetIN.getData(), 0, packetIN.getLength()));
+        } catch (IOException ex) {
+            console.error("Socket recieve packet in");
         }
     }
 
     /**
      * TODO
      *
-     * @param packet
+     * @param message
      */
-    public void receiveMessage(DatagramPacket packet) {
-        this.textArea.append("\nPaquete recibido:"
-                + "\nDe host: " + packet.getAddress()
-                + "\nPuerto host: " + packet.getPort()
-                + "\nLongitud: " + packet.getLength()
-                + "\nContiene:\n\t" + new String(packet.getData(), 0, packet.getLength()));
+    public void sendMessage(String message) {
+        try {
+
+            byte data[] = message.getBytes(); // turn into bytes
+            // create package
+            DatagramPacket pack = new DatagramPacket(data, data.length, this.hostname, this.port);
+            socket.send(pack);
+            console.info("Package length is " + pack.getLength() + " Bytes");
+            ByteArrayInputStream inStreamBuffer = new ByteArrayInputStream(message.getBytes());
+            CheckedInputStream chekedInput = new CheckedInputStream(inStreamBuffer, new Adler32());
+            byte readBuffer[] = new byte[5];
+            while (chekedInput.read(readBuffer) >= 0) {
+                long value = chekedInput.getChecksum().getValue();
+                console.info("The value of checksum is " + value);
+            }
+        } catch (IOException e) {
+            console.error("An error ocurred while sending package");
+        }
     }
 
     /**
@@ -137,7 +126,7 @@ public class Client implements Runnable {
             this.out.close();
             this.buffer.close();
         } catch (InterruptedException | IOException ex) {
-            console.error("Couldn't end application safely");
+            System.out.println("Couldn't end application correctly");
         }
     }
 

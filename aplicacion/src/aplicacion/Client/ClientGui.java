@@ -195,7 +195,10 @@ public class ClientGui extends javax.swing.JFrame {
         jLabel8.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         jLabel8.setText("CONSOLE");
 
+        txtConsole.setBackground(new java.awt.Color(0, 0, 0));
         txtConsole.setColumns(20);
+        txtConsole.setForeground(new java.awt.Color(255, 255, 255));
+        txtConsole.setLineWrap(true);
         txtConsole.setRows(5);
         jScrollPane3.setViewportView(txtConsole);
 
@@ -343,12 +346,15 @@ public class ClientGui extends javax.swing.JFrame {
         // Create a new client even when no param were provided
         try {
             this.client = new Client(
-                    InetAddress.getLocalHost(), //("".equals(this.txtAddress.getText())) ? InetAddress.getLocalHost() : InetAddress.getByName(this.txtAddress.getText()),
+                    ("".equals(this.txtAddress.getText())) ? InetAddress.getLocalHost() : InetAddress.getByName(this.txtAddress.getText()),
                     Integer.parseInt(("".equals(this.txtPort.getText())) ? "5000" : this.txtPort.getText()),
                     this.txtOutput,
                     this.txtConsole
             );
             this.connected = this.client.getConnection();
+            if (this.connected) {
+                console.info("Successful, Client connected");
+            }
         } catch (UnknownHostException e) {
             console.error("Constructing client");
         }
@@ -358,6 +364,7 @@ public class ClientGui extends javax.swing.JFrame {
         if (this.connected && !"".equals(this.txtCommand.getText())) {
             this.client.sendMessage(this.txtCommand.getText());
             this.txtInput.append(this.txtCommand.getText() + "\n");
+            this.txtCommand.setText("");
         }
     }//GEN-LAST:event_btnSendActionPerformed
 
@@ -409,20 +416,11 @@ public class ClientGui extends javax.swing.JFrame {
     private javax.swing.JLabel jLabel9;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel10;
-    private javax.swing.JPanel jPanel11;
-    private javax.swing.JPanel jPanel12;
-    private javax.swing.JPanel jPanel13;
     private javax.swing.JPanel jPanel14;
-    private javax.swing.JPanel jPanel15;
-    private javax.swing.JPanel jPanel16;
-    private javax.swing.JPanel jPanel17;
     private javax.swing.JPanel jPanel18;
     private javax.swing.JPanel jPanel2;
     private javax.swing.JPanel jPanel3;
     private javax.swing.JPanel jPanel4;
-    private javax.swing.JPanel jPanel6;
-    private javax.swing.JPanel jPanel7;
-    private javax.swing.JPanel jPanel8;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JScrollPane jScrollPane2;
     private javax.swing.JScrollPane jScrollPane3;
