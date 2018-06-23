@@ -1,6 +1,7 @@
 package aplicacion.Client;
 
 import aplicacion.utils.ConsoleLogger;
+import aplicacion.utils.DATAPackage;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.DatagramPacket;
@@ -17,7 +18,7 @@ import javax.swing.JTextArea;
  */
 public class Client implements Runnable {
 
-    private final int port;
+    private final int destinationPort;
     private final InetAddress hostname;
     private DatagramSocket socket;
     private Thread thread;
@@ -38,7 +39,7 @@ public class Client implements Runnable {
      */
     public Client(InetAddress hostname, int port, JTextArea textArea, JTextArea txtConsole) {
         this.hostname = hostname;
-        this.port = port;
+        this.destinationPort = port;
 
         this.console = new ConsoleLogger(txtConsole);
         this.textArea = textArea;
@@ -84,24 +85,29 @@ public class Client implements Runnable {
     }
 
     /**
-     * TODO
+     * Transform outputData into packages, and are sent to destination. Send UDP
+     * datagrams with checksum, sequence and each word as data
+     *
      *
      * @param message
      */
     public void sendMessage(String message) {
         try {
+            String[] array = message.split(" ", -1);
+            for (int i = 0; i < array.length; i++) {
+                // generate package with usefull data for tcp-vegas
+                DATAPackage dataPackage = new DATAPackage(i, array[i].getBytes());
 
-            byte data[] = message.getBytes(); // turn into bytes
-            // create package
-            DatagramPacket pack = new DatagramPacket(data, data.length, this.hostname, this.port);
-            socket.send(pack);
-            console.info("Package length is " + pack.getLength() + " Bytes");
-            ByteArrayInputStream inStreamBuffer = new ByteArrayInputStream(message.getBytes());
-            CheckedInputStream chekedInput = new CheckedInputStream(inStreamBuffer, new Adler32());
-            byte readBuffer[] = new byte[5];
-            while (chekedInput.read(readBuffer) >= 0) {
-                long value = chekedInput.getChecksum().getValue();
-                console.info("The value of checksum is " + value);
+                DatagramPacket pack = new DatagramPacket(
+                        dataPackage.getBytes(),
+                        dataPackage.getBytes().length,
+                        this.hostname,
+                        this.destinationPort
+                );
+                // send package with data, checksum, seq number, and datagramPacketdata
+                socket.send(pack);
+
+                console.info("Pack N: " + i + " Length: " + pack.getLength() + " Checksum: " + dataPackage.checkSum);
             }
         } catch (IOException e) {
             console.error("An error ocurred while sending package");
