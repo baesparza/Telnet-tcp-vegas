@@ -1,18 +1,16 @@
 package aplicacion.Client;
 
+import aplicacion.utils.ACKPackage;
 import aplicacion.utils.ConsoleLogger;
 import aplicacion.utils.DATAPackage;
-import java.io.ByteArrayInputStream;
+import aplicacion.utils.FTPPackage;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
-import java.util.zip.Adler32;
-import java.util.zip.CheckedInputStream;
 import javax.swing.JTextArea;
 
 /**
- * Source code for telnet client
  *
  * @author bruno
  */
@@ -68,27 +66,26 @@ public class Client implements Runnable {
     @Override
     public void run() {
         while (this.connection) {
-            // TODO: recieve ack or response
             try {
                 byte data[] = new byte[100];
                 DatagramPacket packetIN = new DatagramPacket(data, data.length);
                 socket.receive(packetIN); // wait for packagethis.textArea.append("\nPaquete recibido:"
-                this.textArea.append("\nPaquete recibido:"
-                        + "\nDe host: " + packetIN.getAddress()
-                        + "\nPuerto host: " + packetIN.getPort()
-                        + "\nLongitud: " + packetIN.getLength()
-                        + "\nContiene:\n\t" + new String(packetIN.getData(), 0, packetIN.getLength()));
+                // validate if type of package is ACK or a response
+                if (FTPPackage.isACK(new String(packetIN.getData()))) {
+                    ACKPackage ack = (ACKPackage) FTPPackage.getPackage(new String(packetIN.getData()));
+                    console.info("Recieved ACK, ID: " + ack.id);
+                    continue;
+                }
+                // package is a response from server
             } catch (IOException ex) {
                 console.error("Socket recieve packet in");
             }
-            System.out.println("running");
         }
     }
 
     /**
      * Transform outputData into packages, and are sent to destination. Send UDP
      * datagrams with checksum, sequence and each word as data
-     *
      *
      * @param message
      */
@@ -97,7 +94,7 @@ public class Client implements Runnable {
             String[] array = message.split(" ");
             for (int i = 0; i < array.length; i++) {
                 // generate package with usefull data for tcp-vegas
-                DATAPackage dataPackage = new DATAPackage(i, array[i]);
+                DATAPackage dataPackage = new DATAPackage(String.valueOf(i), array[i], (i + 1) < array.length ? "0" : "1");
 
                 DatagramPacket pack = new DatagramPacket(
                         dataPackage.getBytes(),
@@ -108,7 +105,7 @@ public class Client implements Runnable {
                 // send package with data, checksum, seq number, and datagramPacketdata
                 socket.send(pack);
 
-                console.info("Send pack N: " + i + " Length: " + pack.getLength() + " Checksum: " + dataPackage.checkSum);
+                console.info("Send pack ID: " + i + " Length: " + pack.getLength() + " Checksum: " + dataPackage.checkSum);
             }
         } catch (IOException e) {
             console.error("An error ocurred while sending package");

@@ -1,64 +1,52 @@
 package aplicacion.utils;
 
 import java.io.IOException;
-import java.util.zip.CRC32;
 
 /**
  *
  * @author bruno
  */
-public class DATAPackage {
+public class DATAPackage extends FTPPackage {
 
-    public long sequenceNumber;
-    public long checkSum;
-    public byte[] data;
+    public String checkSum;
+    public String data;
+    public String fragement;
 
-    public DATAPackage(long sequenceNumber, String data) throws IOException {
-        this.sequenceNumber = sequenceNumber;
-        this.data = data.getBytes();
-
-        this.checkSum = DATAPackage.getChecksum(this.data);
+    /**
+     * Package with data or message
+     *
+     * @param id of package to be send
+     * @param data of package
+     * @param fragement if there are more fragments
+     * @throws IOException when error with the checksum
+     */
+    public DATAPackage(String id, String data, String fragement) throws IOException {
+        super(id);
+        this.data = data;
+        this.checkSum = String.valueOf(DATAPackage.getChecksum(this.data.getBytes()));
+        this.fragement = fragement;
     }
 
-    public DATAPackage(long sequenceNumber, long checkSum, byte[] data) {
-        this.sequenceNumber = sequenceNumber;
+    /**
+     * Package with defined checksum
+     *
+     * @param id
+     * @param checkSum when check sum is already defined
+     * @param data
+     * @param fragement
+     */
+    public DATAPackage(String id, String checkSum, String data, String fragement) {
+        super(id);
         this.checkSum = checkSum;
         this.data = data;
+        this.fragement = fragement;
     }
 
-    public byte[] getBytes() {
-        return this.toString().getBytes();
-    }
-
+    /**
+     * @return structured package
+     */
     @Override
     public String toString() {
-        return sequenceNumber + " " + checkSum + " " + data;
-    }
-
-    public static DATAPackage getPackage(byte[] data) throws IOException {
-        String[] array = (new String(data)).split(" ");
-        System.out.println("incoming value " + array[2]);
-        if (array.length == 3) {
-            // this package has data
-            // TODO: fix data[2] is already an byte[]
-            return new DATAPackage(Long.valueOf(array[0]), Long.valueOf(array[1]),);
-        }
-        // this package is an ack
-        return null;
-    }
-
-    public static long getChecksum(byte[] data) {
-        System.out.println(data);
-        CRC32 checksum = new CRC32();
-        checksum.update(data, 0, data.length);
-        return checksum.getValue();
-    }
-
-    public String getData() {
-        return new String(this.data);
-    }
-
-    public static boolean validChecksum(Long checkSum, byte[] data) throws IOException {
-        return (checkSum == DATAPackage.getChecksum(data));
+        return this.id + ";" + this.checkSum + ";" + this.data + ";" + this.fragement;
     }
 }
