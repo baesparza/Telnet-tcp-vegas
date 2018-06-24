@@ -1,11 +1,7 @@
 package aplicacion.utils;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import java.util.zip.Adler32;
-import java.util.zip.CheckedInputStream;
+import java.util.zip.CRC32;
 
 /**
  *
@@ -17,11 +13,17 @@ public class DATAPackage {
     public long checkSum;
     public byte[] data;
 
-    public DATAPackage(long sequenceNumber, byte[] data) throws IOException {
+    public DATAPackage(long sequenceNumber, String data) throws IOException {
         this.sequenceNumber = sequenceNumber;
-        this.data = data;
+        this.data = data.getBytes();
 
-        this.checkSum = DATAPackage.getChecksum(data);
+        this.checkSum = DATAPackage.getChecksum(this.data);
+    }
+
+    public DATAPackage(long sequenceNumber, long checkSum, byte[] data) {
+        this.sequenceNumber = sequenceNumber;
+        this.checkSum = checkSum;
+        this.data = data;
     }
 
     public byte[] getBytes() {
@@ -30,16 +32,33 @@ public class DATAPackage {
 
     @Override
     public String toString() {
-        return sequenceNumber + "|" + checkSum + "|" + data;
+        return sequenceNumber + " " + checkSum + " " + data;
     }
 
-    public static DATAPackage getPackage() {
+    public static DATAPackage getPackage(byte[] data) throws IOException {
+        String[] array = (new String(data)).split(" ");
+        System.out.println("incoming value " + array[2]);
+        if (array.length == 3) {
+            // this package has data
+            // TODO: fix data[2] is already an byte[]
+            return new DATAPackage(Long.valueOf(array[0]), Long.valueOf(array[1]),);
+        }
+        // this package is an ack
         return null;
     }
 
-    public static long getChecksum(byte[] data) throws IOException {
-        CheckedInputStream chekedInput = new CheckedInputStream(new ByteArrayInputStream(data), new Adler32());
-        chekedInput.read(data);
-        return chekedInput.getChecksum().getValue();
+    public static long getChecksum(byte[] data) {
+        System.out.println(data);
+        CRC32 checksum = new CRC32();
+        checksum.update(data, 0, data.length);
+        return checksum.getValue();
+    }
+
+    public String getData() {
+        return new String(this.data);
+    }
+
+    public static boolean validChecksum(Long checkSum, byte[] data) throws IOException {
+        return (checkSum == DATAPackage.getChecksum(data));
     }
 }

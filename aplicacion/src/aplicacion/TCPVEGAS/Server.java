@@ -1,61 +1,38 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package aplicacion.TCPVEGAS;
 
+import aplicacion.utils.DATAPackage;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
+import java.net.InetAddress;
 import java.net.SocketException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
  * @author bruno
  */
-public class Server {
+public class Server implements Runnable {
 
-    private DatagramSocket socket; // socket para conectarse al cliente
+    private DatagramSocket socket;
+    private Thread thread;
 
     public Server() {
-        try // crea objeto DatagramSocket para enviar y recibir paquetes
-        {
+        try {
             socket = new DatagramSocket(5000);
-        } // fin de try
-        catch (SocketException excepcionSocket) {
-            excepcionSocket.printStackTrace();
-            System.exit(1);
-        } // fin de catch
+        } catch (SocketException ex) {
+            Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
 
-    // espera a que lleguen los paquetes, muestra los datos y repite el paquete al cliente
-    public void esperarPaquetes() {
-        while (true) {
-            try // recibe el paquete, muestra su contenido, devuelve una copia al cliente
-            {
-                byte datos[] = new byte[100]; // establece un paquete
-                DatagramPacket paqueteRecibir
-                        = new DatagramPacket(datos, datos.length);
-
-                socket.receive(paqueteRecibir); // espera a recibir el paquete
-
-                // muestra la información del paquete recibido
-                System.out.println("\nPaquete recibido:"
-                        + "\nDe host: " + paqueteRecibir.getAddress()
-                        + "\nPuerto host: " + paqueteRecibir.getPort()
-                        + "\nLongitud: " + paqueteRecibir.getLength()
-                        + "\nContiene:\n\t" + new String(paqueteRecibir.getData(),
-                                0, paqueteRecibir.getLength()));
-
-                enviarPaqueteAlCliente(paqueteRecibir); // envía el paquete al cliente
-            } // fin de try
-            catch (IOException excepcionES) {
-                System.err.println(excepcionES.toString() + "\n");
-                excepcionES.printStackTrace();
-            } // fin de catch
-        } // fin de while
-    } // fin del método esperarPaquetes
+    /**
+     * Start this thread
+     */
+    public synchronized void start() {
+        thread = new Thread(this);
+        thread.start();
+    }
 
     // repite el paquete al cliente
     private void enviarPaqueteAlCliente(DatagramPacket paqueteRecibir) throws IOException {
@@ -69,4 +46,59 @@ public class Server {
         socket.send(paqueteEnviar); // envía paquete al cliente
         System.out.println("Paquete enviado\n");
     } // fin del método enviarPaqueteAlCliente
+
+    /**
+     * Main loop for application, always listening for packages
+     */
+    @Override
+    public void run() {
+        while (true) {
+            try {
+                // set a incoming package size, and wait for incoming package
+                DatagramPacket packageIN = new DatagramPacket(new byte[100], 100);
+                socket.receive(packageIN);
+                // new package in, send responce
+                DATAPackage dataPackage = DATAPackage.getPackage(packageIN.getData());
+                // validate if chechsums are equal
+
+                // TODOSystem.out.println("c1: " + dataPackage.checkSum + " c2: " + DATAPackage.getChecksum(dataPackage.data));
+                if (DATAPackage.validChecksum(dataPackage.checkSum, dataPackage.data)) {
+                    // valid package
+                    this.sendACK(dataPackage.sequenceNumber, packageIN.getAddress(), packageIN.getPort());
+
+                    System.out.println("Valid package");
+                    System.out.println("Value: " + dataPackage.getData());
+                } else {
+                    System.out.println("Invalid package");
+                }
+
+            } catch (IOException ex) {
+                Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+
+    }
+
+    private void sendACK(Long id, InetAddress hostname, int destPort) {
+        try {
+
+            // generate package with usefull data for tcp-vegas
+            DATAPackage dataPack = new DATAPackage(id, id.toString());
+
+            DatagramPacket pack = new DatagramPacket(
+                    dataPack.getBytes(),
+                    dataPack.getBytes().length,
+                    hostname,
+                    destPort
+            );
+            // send package with data, checksum, seq number, and datagramPacketdata
+            socket.send(pack);
+            System.out.println("Sending ACK, id: " + id);
+        } catch (IOException ex) {
+            System.out.println("ERROR Sending ACK, id: " + id);
+            Logger
+                    .getLogger(Server.class
+                            .getName()).log(Level.SEVERE, null, ex);
+        }
+    }
 }

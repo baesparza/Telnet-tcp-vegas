@@ -9,7 +9,8 @@ public class TestServer {
     public static void main(String[] args) {
 
         Server s = new Server();
-        
-        s.esperarPaquetes();
+
+        s.start();
+        System.out.println("server running");
     }
 }

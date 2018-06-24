@@ -68,6 +68,7 @@ public class Client implements Runnable {
     @Override
     public void run() {
         while (this.connection) {
+            // TODO: recieve ack or response
             try {
                 byte data[] = new byte[100];
                 DatagramPacket packetIN = new DatagramPacket(data, data.length);
@@ -93,10 +94,10 @@ public class Client implements Runnable {
      */
     public void sendMessage(String message) {
         try {
-            String[] array = message.split(" ", -1);
+            String[] array = message.split(" ");
             for (int i = 0; i < array.length; i++) {
                 // generate package with usefull data for tcp-vegas
-                DATAPackage dataPackage = new DATAPackage(i, array[i].getBytes());
+                DATAPackage dataPackage = new DATAPackage(i, array[i]);
 
                 DatagramPacket pack = new DatagramPacket(
                         dataPackage.getBytes(),
@@ -107,7 +108,7 @@ public class Client implements Runnable {
                 // send package with data, checksum, seq number, and datagramPacketdata
                 socket.send(pack);
 
-                console.info("Pack N: " + i + " Length: " + pack.getLength() + " Checksum: " + dataPackage.checkSum);
+                console.info("Send pack N: " + i + " Length: " + pack.getLength() + " Checksum: " + dataPackage.checkSum);
             }
         } catch (IOException e) {
             console.error("An error ocurred while sending package");
