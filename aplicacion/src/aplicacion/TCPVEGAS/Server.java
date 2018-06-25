@@ -60,7 +60,7 @@ public class Server implements Runnable {
                 DATAPackage dataPackage = (DATAPackage) FTPPackage.getPackage(new String(packageIN.getData()));
                 // validate if chechsums are equal
                 if (DATAPackage.validChecksum(dataPackage.checkSum, dataPackage.data.getBytes())) {
-                    this.sendACK(String.valueOf(dataPackage.id), packageIN.getAddress(), packageIN.getPort());
+                    this.sendACK(dataPackage.id, packageIN.getAddress(), packageIN.getPort());
                     listPackages.add(dataPackage);
                     // veryfy if all packages have been receibed
                     if (listPackages.hasEnded()) {
@@ -79,7 +79,7 @@ public class Server implements Runnable {
 
     }
 
-    private void sendACK(String id, InetAddress hostname, int destPort) {
+    private void sendACK(int id, InetAddress hostname, int destPort) {
         try {
             // generate package with usefull data for tcp-vegas
             ACKPackage dataPack = new ACKPackage(id);

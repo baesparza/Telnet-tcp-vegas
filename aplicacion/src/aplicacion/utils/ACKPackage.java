@@ -11,7 +11,7 @@ public class ACKPackage extends FTPPackage {
      *
      * @param id of package
      */
-    public ACKPackage(String id) {
+    public ACKPackage(int id) {
         super(id);
     }
 
@@ -22,7 +22,7 @@ public class ACKPackage extends FTPPackage {
      */
     @Override
     public String toString() {
-        return this.id;
+        return String.valueOf(this.id);
     }
-
+    
 }

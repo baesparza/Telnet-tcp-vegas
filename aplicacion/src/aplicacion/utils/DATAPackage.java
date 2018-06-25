@@ -8,9 +8,9 @@ import java.io.IOException;
  */
 public class DATAPackage extends FTPPackage {
 
-    public String checkSum;
+    public long checkSum;
     public String data;
-    public String fragement;
+    public int fragement;
 
     /**
      * Package with data or message
@@ -20,10 +20,10 @@ public class DATAPackage extends FTPPackage {
      * @param fragement if there are more fragments
      * @throws IOException when error with the checksum
      */
-    public DATAPackage(String id, String data, String fragement) throws IOException {
+    public DATAPackage(int id, String data, int fragement) throws IOException {
         super(id);
         this.data = data;
-        this.checkSum = String.valueOf(DATAPackage.getChecksum(this.data.getBytes()));
+        this.checkSum = DATAPackage.getChecksum(this.data.getBytes());
         this.fragement = fragement;
     }
 
@@ -35,7 +35,7 @@ public class DATAPackage extends FTPPackage {
      * @param data
      * @param fragement
      */
-    public DATAPackage(String id, String checkSum, String data, String fragement) {
+    public DATAPackage(int id, long checkSum, String data, int fragement) {
         super(id);
         this.checkSum = checkSum;
         this.data = data;
