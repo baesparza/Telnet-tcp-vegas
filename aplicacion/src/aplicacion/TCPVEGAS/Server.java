@@ -3,6 +3,7 @@ package aplicacion.TCPVEGAS;
 import aplicacion.utils.ACKPackage;
 import aplicacion.utils.DATAPackage;
 import aplicacion.utils.FTPPackage;
+import aplicacion.utils.ListPackages;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -19,12 +20,15 @@ public class Server implements Runnable {
 
     private DatagramSocket socket;
     private Thread thread;
+    private ListPackages listPackages;
 
     public Server() {
         try {
             socket = new DatagramSocket(5000);
+            listPackages = new ListPackages();
         } catch (SocketException ex) {
             Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+            System.exit(1);
         }
     }
 
@@ -35,19 +39,6 @@ public class Server implements Runnable {
         thread = new Thread(this);
         thread.start();
     }
-
-    // repite el paquete al cliente
-    private void enviarPaqueteAlCliente(DatagramPacket paqueteRecibir) throws IOException {
-        System.out.println("\n\nRepitiendo datos al cliente...");
-
-        // crea paquete para enviar
-        DatagramPacket paqueteEnviar = new DatagramPacket(
-                paqueteRecibir.getData(), paqueteRecibir.getLength(),
-                paqueteRecibir.getAddress(), paqueteRecibir.getPort());
-
-        socket.send(paqueteEnviar); // envía paquete al cliente
-        System.out.println("Paquete enviado\n");
-    } // fin del método enviarPaqueteAlCliente
 
     /**
      * Main loop for application, always listening for packages
@@ -64,12 +55,19 @@ public class Server implements Runnable {
                     // package is an ACK from client
                     continue;
                 }
+                // This package is not an ACK, it has data
+                // if valid, store this data, and wait for full message
                 DATAPackage dataPackage = (DATAPackage) FTPPackage.getPackage(new String(packageIN.getData()));
                 // validate if chechsums are equal
-                if (DATAPackage.validChecksum(new String(dataPackage.checkSum), dataPackage.data.getBytes())) {
+                if (DATAPackage.validChecksum(dataPackage.checkSum, dataPackage.data.getBytes())) {
                     this.sendACK(String.valueOf(dataPackage.id), packageIN.getAddress(), packageIN.getPort());
-                    System.out.println("Valid package");
-                    System.out.println("Value: " + dataPackage.data);
+                    listPackages.add(dataPackage);
+                    // veryfy if all packages have been receibed
+                    if (listPackages.hasEnded()) {
+                        // pass data to application
+                        System.out.println(listPackages.getMessage());
+                        listPackages.clear();
+                    }
                 } else {
                     System.out.println("Invalid package");
                 }
@@ -100,4 +98,18 @@ public class Server implements Runnable {
             Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
+
+    // repite el paquete al cliente
+    private void enviarPaqueteAlCliente(DatagramPacket paqueteRecibir) throws IOException {
+        System.out.println("\n\nRepitiendo datos al cliente...");
+
+        // crea paquete para enviar
+        DatagramPacket paqueteEnviar = new DatagramPacket(
+                paqueteRecibir.getData(), paqueteRecibir.getLength(),
+                paqueteRecibir.getAddress(), paqueteRecibir.getPort());
+
+        socket.send(paqueteEnviar); // envía paquete al cliente
+        System.out.println("Paquete enviado\n");
+    } // fin del método enviarPaqueteAlCliente
+
 }

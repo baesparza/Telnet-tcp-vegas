@@ -94,7 +94,7 @@ public class Client implements Runnable {
             String[] array = message.split(" ");
             for (int i = 0; i < array.length; i++) {
                 // generate package with usefull data for tcp-vegas
-                DATAPackage dataPackage = new DATAPackage(String.valueOf(i), array[i], (i + 1) < array.length ? "0" : "1");
+                DATAPackage dataPackage = new DATAPackage(String.valueOf(i), array[i], (i + 1) < array.length ? "1" : "0");
 
                 DatagramPacket pack = new DatagramPacket(
                         dataPackage.getBytes(),
