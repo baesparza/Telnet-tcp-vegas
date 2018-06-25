@@ -1,5 +1,6 @@
 package aplicacion.utils;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -19,28 +20,34 @@ public class ListPackages {
     }
 
     /**
-     * TODO: add verification of checksum and deletion of repeated ............
-     * TODO: return boolean for controlling packages included or deleted
-     * Add packages in sorted way for later usage, delete repeated and invalid 
+     * Add Packages in sorted way for later usage, delete repeated and invalid
      *
      * @param pack of data
+     * @return true if package has been added or repeated, false if deleted
+     * @throws java.io.IOException
      */
-    public void add(DATAPackage pack) {
-        int id = pack.id;
-        if (id == packages.size()) {
-            // the package is in order, can be added to list
-            packages.add(pack);
-            return;
+    public boolean add(DATAPackage pack) throws IOException {
+        // validate if is a valid package to be added
+        if (!DATAPackage.validChecksum(pack.checkSum, pack.data.getBytes())) {
+            return false;
         }
-        // search position backwards
+        // package can be added
+        int id = pack.id;
+        // search position backwards, to add higher id's to the end
         for (int i = packages.size() - 1; i <= 0; i++) {
+            if (packages.get(i).id > id) {
+                // package is already in the list
+                return true;
+            }
             if (packages.get(i).id > id) {
                 continue;
             }
             // found position
             packages.add(i + 1, pack);
-            return;
+            return true;
         }
+        // something whent worng and not been added
+        return false;
     }
 
     /**

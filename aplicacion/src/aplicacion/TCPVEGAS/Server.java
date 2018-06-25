@@ -58,10 +58,9 @@ public class Server implements Runnable {
                 // This package is not an ACK, it has data
                 // if valid, store this data, and wait for full message
                 DATAPackage dataPackage = (DATAPackage) FTPPackage.getPackage(new String(packageIN.getData()));
-                // validate if chechsums are equal
-                if (DATAPackage.validChecksum(dataPackage.checkSum, dataPackage.data.getBytes())) {
+                // if after validations is valid, add package 
+                if (listPackages.add(dataPackage)) {
                     this.sendACK(dataPackage.id, packageIN.getAddress(), packageIN.getPort());
-                    listPackages.add(dataPackage);
                     // veryfy if all packages have been receibed
                     if (listPackages.hasEnded()) {
                         // pass data to application
