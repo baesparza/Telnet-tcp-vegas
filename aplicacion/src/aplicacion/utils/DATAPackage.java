@@ -1,6 +1,7 @@
 package aplicacion.utils;
 
 import java.io.IOException;
+import java.util.Date;
 
 /**
  *
@@ -11,6 +12,10 @@ public class DATAPackage extends FTPPackage {
     public long checkSum;
     public String data;
     public int fragement;
+
+    private boolean ACKreceived;
+    private boolean ACKwaiting;
+    private long startTime;
 
     /**
      * Package with data or message
@@ -25,6 +30,9 @@ public class DATAPackage extends FTPPackage {
         this.data = data;
         this.checkSum = DATAPackage.getChecksum(this.data.getBytes());
         this.fragement = fragement;
+
+        this.ACKwaiting = false;
+        this.ACKreceived = false;
     }
 
     /**
@@ -40,6 +48,9 @@ public class DATAPackage extends FTPPackage {
         this.checkSum = checkSum;
         this.data = data;
         this.fragement = fragement;
+
+        this.ACKwaiting = false;
+        this.ACKreceived = false;
     }
 
     /**
@@ -49,4 +60,34 @@ public class DATAPackage extends FTPPackage {
     public String toString() {
         return this.id + ";" + this.checkSum + ";" + this.data + ";" + this.fragement;
     }
+
+    /**
+     * TODO: add description
+     */
+    public boolean isWaitingACK() {
+        return this.ACKwaiting;
+    }
+
+    public boolean hasACK() {
+        return this.ACKreceived;
+    }
+
+    public void setACKreceived(boolean ACKreceived) {
+        this.ACKreceived = ACKreceived;
+    }
+
+    public void setACKwaiting(boolean ACKwaiting) {
+        this.ACKwaiting = ACKwaiting;
+    }
+
+    public void statTimer() {
+        this.startTime = System.currentTimeMillis();
+    }
+
+    public boolean timeOut() {
+        // TODO: validate time
+        long time = (new Date()).getTime() - startTime;
+        return time > 1000;
+    }
+
 }

@@ -4,6 +4,7 @@ import aplicacion.utils.ACKPackage;
 import aplicacion.utils.ConsoleLogger;
 import aplicacion.utils.DATAPackage;
 import aplicacion.utils.FTPPackage;
+import aplicacion.utils.OutputList;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -21,6 +22,7 @@ public class Client implements Runnable {
     private DatagramSocket socket;
     private Thread thread;
 
+    private OutputList outputList;
     private final JTextArea textArea;
     private ConsoleLogger console;
     private boolean connection;
@@ -41,7 +43,7 @@ public class Client implements Runnable {
 
         this.console = new ConsoleLogger(txtConsole);
         this.textArea = textArea;
-
+        this.outputList = new OutputList();
         this.connection = false;
         try {
             this.socket = new DatagramSocket();
@@ -72,8 +74,10 @@ public class Client implements Runnable {
                 socket.receive(packetIN); // wait for packagethis.textArea.append("\nPaquete recibido:"
                 // validate if type of package is ACK or a response
                 if (FTPPackage.isACK(new String(packetIN.getData()))) {
+                    // tell package ack has arrived
                     ACKPackage ack = (ACKPackage) FTPPackage.getPackage(new String(packetIN.getData()));
                     console.info("Recieved ACK, ID: " + ack.id);
+                    this.outputList.receivedACK(ack.id);
                     continue;
                 }
                 // package is a response from server
@@ -87,28 +91,21 @@ public class Client implements Runnable {
      * Transform outputData into packages, and are sent to destination. Send UDP
      * datagrams with checksum, sequence and each word as data
      *
-     * @param message
+     * @param message to be sent
      */
     public void sendMessage(String message) {
         try {
-            String[] array = message.split(" ");
+            String[] array = message.split("");
             for (int i = 0; i < array.length; i++) {
-                // generate package with usefull data for tcp-vegas
-                DATAPackage dataPackage = new DATAPackage(i, array[i], (i + 1) < array.length ? 1 : 0);
-
-                DatagramPacket pack = new DatagramPacket(
-                        dataPackage.getBytes(),
-                        dataPackage.getBytes().length,
-                        this.hostname,
-                        this.destinationPort
-                );
-                // send package with data, checksum, seq number, and datagramPacketdata
-                socket.send(pack);
-
-                console.info("Send pack ID: " + i + " Length: " + pack.getLength() + " Checksum: " + dataPackage.checkSum);
+                // gen package and add it to the list
+                if (!this.outputList.addPackage(new DATAPackage(i, array[i], (i + 1) < array.length ? 1 : 0))) {
+                    // package was not added
+                    this.console.warning("Package could not be added to list, packages are still being sent");
+                }
             }
+            this.outputList.sendPackages(this.socket, this.hostname, this.destinationPort, this.console);
         } catch (IOException e) {
-            console.error("An error ocurred while sending package");
+            console.error("An error ocurred while sending message");
         }
     }
 

@@ -71,12 +71,13 @@ public class ListPackages {
     public String getMessage() {
         StringBuilder resp = new StringBuilder();
         for (DATAPackage p : packages) {
-            resp.append(p.data).append(" ");
+            resp.append(p.data);
         }
         return resp.toString();
     }
 
     /**
+     * TODO: validate with id if all packages have been received ...............
      * Verify if all packages have been received by checking last package
      * received
      *
