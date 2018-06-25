@@ -97,18 +97,4 @@ public class Server implements Runnable {
             Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
-
-    // repite el paquete al cliente
-    private void enviarPaqueteAlCliente(DatagramPacket paqueteRecibir) throws IOException {
-        System.out.println("\n\nRepitiendo datos al cliente...");
-
-        // crea paquete para enviar
-        DatagramPacket paqueteEnviar = new DatagramPacket(
-                paqueteRecibir.getData(), paqueteRecibir.getLength(),
-                paqueteRecibir.getAddress(), paqueteRecibir.getPort());
-
-        socket.send(paqueteEnviar); // envía paquete al cliente
-        System.out.println("Paquete enviado\n");
-    } // fin del método enviarPaqueteAlCliente
-
 }

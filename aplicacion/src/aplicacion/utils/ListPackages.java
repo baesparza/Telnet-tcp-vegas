@@ -10,7 +10,7 @@ import java.util.List;
  */
 public class ListPackages {
 
-    private List<DATAPackage> packages;
+    private final List<DATAPackage> packages;
 
     /**
      * Class to manage packages, by sorting them while being received
@@ -34,8 +34,8 @@ public class ListPackages {
         // package can be added
         int id = pack.id;
         // search position backwards, to add higher id's to the end
-        for (int i = packages.size() - 1; i <= 0; i++) {
-            if (packages.get(i).id > id) {
+        for (int i = packages.size() - 1; i >= 0; i--) {
+            if (packages.get(i).id == id) {
                 // package is already in the list
                 return true;
             }
@@ -44,6 +44,12 @@ public class ListPackages {
             }
             // found position
             packages.add(i + 1, pack);
+            return true;
+        }
+        if (id == packages.size()) {
+            // package needs to be added to the end
+            // may be the first package in the list
+            packages.add(pack);
             return true;
         }
         // something whent worng and not been added
