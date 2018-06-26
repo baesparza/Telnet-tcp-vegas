@@ -32,10 +32,10 @@ public class Client implements Runnable {
      * socket and add stream input/output that will let us read/write to the
      * socket
      *
-     * @param hostname address of TODO
-     * @param port of TODO
+     * @param hostname ip address
+     * @param port of socket
      * @param textArea input textArea for write messages
-     * @param txtConsole TODO
+     * @param txtConsole textArea to write logs
      */
     public Client(InetAddress hostname, int port, JTextArea textArea, JTextArea txtConsole) {
         this.hostname = hostname;

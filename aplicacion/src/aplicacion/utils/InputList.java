@@ -8,14 +8,14 @@ import java.util.List;
  *
  * @author bruno
  */
-public class ListPackages {
+public class InputList {
 
     private final List<DATAPackage> packages;
 
     /**
      * Class to manage packages, by sorting them while being received
      */
-    public ListPackages() {
+    public InputList() {
         this.packages = new ArrayList<>();
     }
 

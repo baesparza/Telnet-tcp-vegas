@@ -13,5 +13,4 @@ public class TestCliente {
         gui.setVisible(true);
     }
     
-    // TODO: not recieve messages from server or display them
 }

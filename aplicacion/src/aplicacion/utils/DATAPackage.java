@@ -87,7 +87,7 @@ public class DATAPackage extends FTPPackage {
     public boolean timeOut() {
         // TODO: validate time
         long time = (new Date()).getTime() - startTime;
-        return time > 1000;
+        return time > 500;
     }
 
 }

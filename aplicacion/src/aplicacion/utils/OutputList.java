@@ -48,8 +48,7 @@ public class OutputList {
      * @param port socket port
      * @param cLog log error messages
      */
-    public void sendPackages(DatagramSocket output, InetAddress hostname, int port, ConsoleLogger cLog) {
-        // TODO: raise flag and dont admit more packages
+    public synchronized void sendPackages(DatagramSocket output, InetAddress hostname, int port, ConsoleLogger cLog) {
         while (this.min < this.packages.size()) {
             // lock imput packages 
             this.canReceive = false;
@@ -57,7 +56,7 @@ public class OutputList {
             for (int i = this.min; i < this.max; i++) {
                 DATAPackage pck = this.packages.get(i);
                 // if package has already been send, pass
-                if (pck.isWaitingACK()) {
+                if (pck.isWaitingACK() || pck.hasACK()) {
                     continue;
                 }
                 // package hasnt been send yet
@@ -69,20 +68,21 @@ public class OutputList {
                 }
             }
             // verify ack to move window, or verify timeot of packages in range
-            for (int i = this.min; i < this.max; i++) {
+            int tempMin = this.min, tempMax = this.max;
+            for (int i = tempMin; i < tempMax; i++) {
                 DATAPackage pck = this.packages.get(i);
-                // verify id any package has received an ack
-                if (pck.hasACK()) {
-                    // move window if packages can 
-                    // TODO: move window, after validating packages doesn't lock moving
+                /// move window
+                if (this.packages.get(i).hasACK() && i == this.min) {
+                    // can move window
                     this.min += this.window_size;
-                    this.max = (this.max <= this.packages.size()) ? (this.max + 1) : this.packages.size();
+                    this.max = (this.max + this.window_size < this.packages.size()) ? (this.max + this.window_size) : this.packages.size();
                     continue;
                 }
+                // package hasnt been validated yet
                 if (pck.timeOut()) {
                     try {
                         this.packageSender(pck, output, hostname, port);
-                        cLog.info("Resending pack ID: " + pck.id);
+                        cLog.warning("Timeout, resending pack ID: " + pck.id);
                     } catch (IOException ex) {
                         cLog.error("while resending package with ID: " + pck.id);
                     }
@@ -92,6 +92,8 @@ public class OutputList {
         // clear list for new packages, and accept more packages
         this.packages.clear();
         this.canReceive = true;
+        this.min = 0;
+        this.max = this.window_size = 1;
     }
 
     private void packageSender(DATAPackage pck, DatagramSocket output, InetAddress hostname, int port) throws IOException {

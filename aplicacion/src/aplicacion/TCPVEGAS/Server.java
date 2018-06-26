@@ -3,7 +3,7 @@ package aplicacion.TCPVEGAS;
 import aplicacion.utils.ACKPackage;
 import aplicacion.utils.DATAPackage;
 import aplicacion.utils.FTPPackage;
-import aplicacion.utils.ListPackages;
+import aplicacion.utils.InputList;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -20,12 +20,12 @@ public class Server implements Runnable {
 
     private DatagramSocket socket;
     private Thread thread;
-    private ListPackages listPackages;
+    private InputList listPackages;
 
     public Server() {
         try {
             socket = new DatagramSocket(5000);
-            listPackages = new ListPackages();
+            listPackages = new InputList();
         } catch (SocketException ex) {
             Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
             System.exit(1);
@@ -68,7 +68,7 @@ public class Server implements Runnable {
                         listPackages.clear();
                     }
                 } else {
-                    System.out.println("Invalid package");
+                    System.out.println("Invalid package have been deleted");
                 }
 
             } catch (IOException ex) {
