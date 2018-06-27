@@ -26,3 +26,4 @@ hs_err_pid*
 /aplicacion/build/
 /aplicacion/dist/
 /OutList/nbproject/private/
+/TCPPackage/nbproject/private/

@@ -357,10 +357,7 @@ public class ClientGui extends javax.swing.JFrame {
                     this.txtOutput,
                     this.txtConsole
             );
-            this.connected = this.client.getConnection();
-            if (this.connected) {
-                console.info("Successful, Client connected");
-            }
+            
             this.client.start();
         } catch (UnknownHostException e) {
             console.error("Constructing client");
