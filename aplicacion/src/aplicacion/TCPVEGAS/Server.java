@@ -79,7 +79,6 @@ public class Server implements Runnable {
     }
 
     private void sendACK(int id, InetAddress hostname, int destPort) {
-        // TODO: simulaate delay with randomic sleep
         try {
             // generate package with usefull data for tcp-vegas
             ACKPackage dataPack = new ACKPackage(id);

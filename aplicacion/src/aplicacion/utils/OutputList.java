@@ -18,6 +18,9 @@ public class OutputList {
     private boolean canReceive;
     private int min, max;
 
+    /**
+     * TODO: manipulate windows size, Control packages, and resend as needed
+     */
     public OutputList() {
         this.packages = new ArrayList<>();
         this.window_size = 1;
@@ -48,7 +51,7 @@ public class OutputList {
      * @param port socket port
      * @param cLog log error messages
      */
-    public synchronized void sendPackages(DatagramSocket output, InetAddress hostname, int port, ConsoleLogger cLog) {
+    public void sendPackages(DatagramSocket output, InetAddress hostname, int port, ConsoleLogger cLog) {
         while (this.min < this.packages.size()) {
             // lock imput packages 
             this.canReceive = false;
@@ -75,7 +78,9 @@ public class OutputList {
                 if (this.packages.get(i).hasACK() && i == this.min) {
                     // can move window
                     this.min += this.window_size;
-                    this.max = (this.max + this.window_size < this.packages.size()) ? (this.max + this.window_size) : this.packages.size();
+                    if (this.max <= this.packages.size()) {
+                        this.max++;
+                    }
                     continue;
                 }
                 // package hasnt been validated yet
@@ -97,7 +102,7 @@ public class OutputList {
     }
 
     private void packageSender(DATAPackage pck, DatagramSocket output, InetAddress hostname, int port) throws IOException {
-        // TODO: add delay
+        // TODO: fix delay
         pck.setACKwaiting(true);
         pck.statTimer();
         byte[] pckByte = pck.getBytes();
@@ -107,12 +112,11 @@ public class OutputList {
     }
 
     public void receivedACK(int id) {
-        for (int i = this.min; i < this.max; i++) {
-            if (this.packages.get(i).id == id) {
-                DATAPackage pck = this.packages.get(i);
-                pck.setACKreceived(true);
-                pck.setACKwaiting(false);
-            }
+        if (this.packages.isEmpty() || this.packages.size() < id) {
+            return;
         }
+        DATAPackage pck = this.packages.get(id);
+        pck.setACKreceived(true);
+        pck.setACKwaiting(false);
     }
 }
