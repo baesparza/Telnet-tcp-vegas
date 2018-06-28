@@ -1,9 +1,6 @@
 package aplicacion.Client;
 
-import aplicacion.utils.ACKPackage;
 import aplicacion.utils.ConsoleLogger;
-import aplicacion.utils.DATAPackage;
-import aplicacion.utils.FTPPackage;
 import aplicacion.utils.OutputList;
 import aplicacion.utils.TCPPacket;
 import java.io.BufferedReader;
@@ -23,8 +20,9 @@ import javax.swing.JTextArea;
  */
 public class Client implements Runnable {
 
-    private final int port;
-    private final InetAddress hostname;
+    // TODO: sort variables
+    private final int serverPort;
+    private final InetAddress serverAddess;
     private DatagramSocket socket;
     private Thread thread;
     private byte[] receiveData;
@@ -32,28 +30,32 @@ public class Client implements Runnable {
     private OutputList outputList;
     private final JTextArea textArea;
     private ConsoleLogger console;
+    private boolean connected;
 
     /**
      * Constructor, set data for connection, initialize variables. Create new
      * socket and add stream input/output that will let us read/write to the
      * socket
      *
-     * @param hostname ip address
-     * @param port of socket
+     * @param hostname ip address of server
+     * @param port of server
      * @param textArea input textArea for write messages
      * @param txtConsole textArea to write logs
+     * @throws java.lang.Exception when failed to create client
      */
-    public Client(InetAddress hostname, int port, JTextArea textArea, JTextArea txtConsole) throws SocketException {
-        this.socket = new DatagramSocket();
-        this.hostname = hostname;
-        this.port = port;
-
+    public Client(InetAddress hostname, int port, JTextArea textArea, JTextArea txtConsole) throws Exception {
+        this.serverAddess = hostname;
+        this.serverPort = port;
+        // GUI text areas
         this.console = new ConsoleLogger(txtConsole);
         this.textArea = textArea;
-        this.outputList = new OutputList();
-
-        BufferedReader inFromUser = new BufferedReader(new InputStreamReader(System.in));
-        receiveData = new byte[1024];
+        // init socket and other fields
+        this.socket = new DatagramSocket();
+        //  this.outputList = new OutputList();
+        this.receiveData = new byte[1024];
+        this.connected = false;
+        // connect client to server
+        this.handshake();
     }
 
     /**
@@ -62,8 +64,6 @@ public class Client implements Runnable {
     public synchronized void start() {
         thread = new Thread(this);
         thread.start();
-
-        this.handshake();
     }
 
     /**
@@ -71,8 +71,14 @@ public class Client implements Runnable {
      */
     @Override
     public void run() {
+        // TODO: add valid while
         /*
-        while (this.connection) {
+        
+        
+        
+        
+        
+        while (true) {
             try {
                 byte data[] = new byte[100];
                 DatagramPacket packetIN = new DatagramPacket(data, data.length);
@@ -90,33 +96,8 @@ public class Client implements Runnable {
                 console.error("Socket recieve packet in");
             }
         }
+
          */
-        boolean quit = false;
-        while (!quit) {
-            System.out.print("Enter string to send (\"quit\" to exit): ");
-            String input = inFromUser.readLine();
-
-            if (input.indexOf("quit") != -1) {
-                System.out.println("Requested to disconnect.");
-                TCPPacket sendData = new TCPPacket();
-                byte[] data = sendData.getHeader(input).getBytes();
-                DatagramPacket sendPacket = new DatagramPacket(data, data.length, this.hostname, this.port);
-                this.socket.send(sendPacket);
-                quit = disconnect();
-            } else {
-                TCPPacket sendData = new TCPPacket();
-                sendData.body = input;
-                byte[] data = sendData.getHeader().getBytes();
-                DatagramPacket sendPacket = new DatagramPacket(data, data.length, this.hostname, this.port);
-                this.socket.send(sendPacket);
-
-                System.out.println("------------Sent-----------");
-                sendData.printContent();
-                System.out.println("---------------------------\n");
-            }
-
-        }
-
         this.socket.close();
     }
 
@@ -126,7 +107,7 @@ public class Client implements Runnable {
      *
      * @param message to be sent
      */
-    public void sendMessage(String message) {
+    public void sendMessage(String message) throws IOException {
         /*
         try {
             String[] array = message.split("");
@@ -142,56 +123,47 @@ public class Client implements Runnable {
             console.error("An error ocurred while sending message");
         }
          */
-        String[] array = message.split("");
-        for (int i = 0; i < array.length; i++) {
-            try {
-                TCPPacket sendData = new TCPPacket();
+        TCPPacket sendData = new TCPPacket();
+        sendData.body = message;
+        byte[] data = sendData.getHeader().getBytes();
+        DatagramPacket sendPacket = new DatagramPacket(data, data.length, this.serverAddess, this.serverPort);
+        this.socket.send(sendPacket);
 
-                sendData.synchronizationNumber = 1;
-                sendData.acknowledgementNumber = 1;
-                sendData.synchronizationBit = 1;
-                sendData.acknowledgementBit = 1;
-
-                byte[] data = sendData.getHeader(array[i]).getBytes();
-                DatagramPacket sendPacket = new DatagramPacket(data, data.length, this.hostname, this.port);
-                this.socket.send(sendPacket);
-                this.console.warning("sended");
-            } catch (IOException ex) {
-                Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
-            }
-        }
+        System.out.println("------------Sent-----------");
+        sendData.getHeader();
+        System.out.println("---------------------------\n");
 
     }
 
     /**
      * TODO: add timeout
-     *
-     * @throws Exception
      */
     public void handshake() throws Exception {
+        // create new synchronization packet and send it to server
         TCPPacket sendData = new TCPPacket();
         sendData.synchronizationBit = 1;
-
         byte[] data = sendData.getHeader().getBytes();
-        DatagramPacket sendPacket = new DatagramPacket(data, data.length, this.hostname, this.port);
-        this.socket.send(sendPacket);
-
-        DatagramPacket receivePacket = new DatagramPacket(this.receiveData, this.receiveData.length);
-        this.socket.receive(receivePacket);
-        TCPPacket receivedData = new TCPPacket(new String(receivePacket.getData()));
-
-        if (receivedData.acknowledgementBit == 1) {
+        DatagramPacket packetOUT = new DatagramPacket(data, data.length, this.serverAddess, this.serverPort);
+        this.socket.send(packetOUT);
+        // wait for a synchronization ACK packet from server
+        DatagramPacket packetIN = new DatagramPacket(this.receiveData, this.receiveData.length);
+        this.socket.receive(packetIN);
+        TCPPacket receivedData = new TCPPacket(new String(packetIN.getData()));
+        // validate if it's a synchronization ACK packet
+        if (receivedData.acknowledgementBit == 1 && receivedData.synchronizationBit == 1) {
+            // send confirmation to server
             sendData = new TCPPacket();
             sendData.synchronizationNumber = 1;
             sendData.acknowledgementNumber = 1;
             sendData.synchronizationBit = 1;
             sendData.acknowledgementBit = 1;
-
             data = sendData.getHeader().getBytes();
-            sendPacket = new DatagramPacket(data, data.length, this.hostname, this.port);
-            this.socket.send(sendPacket);
-            this.console.info("Three-way Handshake Complete, Client is connected");
+            packetOUT = new DatagramPacket(data, data.length, this.serverAddess, this.serverPort);
+            this.socket.send(packetOUT);
+            this.console.info("Client connected, Server IP: " + this.serverAddess.getHostAddress() + ", Server Port: " + this.serverPort);
+            this.connected = true;
         }
+        // TODO: add when not connected
     }
 
     /**
@@ -201,21 +173,28 @@ public class Client implements Runnable {
      * @throws Exception
      */
     public boolean disconnect() throws Exception {
+        // send 
+        System.out.println("Requested to disconnect.");
+        TCPPacket sendData = new TCPPacket();
+        byte[] data = sendData.getHeader().getBytes();
+        DatagramPacket sendPacket = new DatagramPacket(data, data.length, this.serverAddess, this.serverPort);
+        this.socket.send(sendPacket);
+//////////////
         DatagramPacket receivePacket = new DatagramPacket(this.receiveData, receiveData.length);
         this.socket.receive(receivePacket);
         TCPPacket receivedData = new TCPPacket(new String(receivePacket.getData()));
 
         if (receivedData.finishBit == 1) {
-            TCPPacket sendData = new TCPPacket();
+            sendData = new TCPPacket();
             sendData.acknowledgementBit = 1;
-            byte[] data = sendData.getHeader().getBytes();
-            DatagramPacket sendPacket = new DatagramPacket(data, data.length, this.hostname, this.port);
+            data = sendData.getHeader().getBytes();
+            sendPacket = new DatagramPacket(data, data.length, this.serverAddess, this.serverPort);
             this.socket.send(sendPacket);
 
             sendData = new TCPPacket();
             sendData.finishBit = 1;
             data = sendData.getHeader().getBytes();
-            sendPacket = new DatagramPacket(data, data.length, this.hostname, this.port);
+            sendPacket = new DatagramPacket(data, data.length, this.serverAddess, this.serverPort);
             this.socket.send(sendPacket);
         }
 
@@ -225,4 +204,12 @@ public class Client implements Runnable {
 
         return (receivedData.acknowledgementBit == 1);
     }
+
+    /**
+     * @return state of connection
+     */
+    public boolean isConnected() {
+        return connected;
+    }
+
 }

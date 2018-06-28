@@ -19,21 +19,31 @@ import java.util.logging.Logger;
  */
 public class Server implements Runnable {
 
+    /**
+     * TODO: connect to various ports-------------------------------------------
+     * Default port for sever
+     */
+    public static final int PORT = 5000;
+
     private DatagramSocket socket;
     private Thread thread;
-    private InputList listPackages;
-
-    private InetAddress IPAddress;
-    private int port;
+    //    private InputList listPackages;
     private byte[] receiveData;
 
-    // TODO: initialize variables
+    /**
+     * Initialize server and start listening for a handShake
+     */
     public Server() {
         try {
-            socket = new DatagramSocket(5000);
-            listPackages = new InputList();
+            //  listPackages = new InputList();
+            this.socket = new DatagramSocket(Server.PORT);
+            receiveData = new byte[1024];
+            this.handShake();
         } catch (SocketException ex) {
-            Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+            System.out.println("Can'1 initialize socket");
+            System.exit(1);
+        } catch (Exception ex) {
+            System.out.println("Cant'1 initailize handshake");
             System.exit(1);
         }
     }
@@ -51,6 +61,45 @@ public class Server implements Runnable {
      */
     @Override
     public void run() {
+
+        while (true) {
+            try {
+                receiveData = new byte[1024];
+                DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
+                this.socket.receive(receivePacket);
+                TCPPacket receivedData = new TCPPacket(new String(receivePacket.getData()));
+
+                System.out.println("----------Received---------");
+                System.out.println(receivedData.getHeader());
+                System.out.println("---------------------------\n");
+
+                if (receivedData.body.indexOf("quit") != -1) {
+                    System.out.println("Request to disconnect.");
+                    disconnect();
+                    break;
+                }
+            } catch (IOException ex) {
+                Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+            } catch (Exception ex) {
+                Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+
+        this.socket.close();
+
+        // while(true){
+        //    DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
+        //    serverSocket.receive(receivePacket);
+        //    String sentence = new String(receivePacket.getData());
+        //    System.out.println("RECEIVED: " + sentence);
+        //    IPAddress = receivePacket.getAddress();
+        //    port = receivePacket.getPort();
+        //    String capitalizedSentence = sentence.toUpperCase();
+        //    sendData = capitalizedSentence.getBytes();
+        //    DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, IPAddress, port);
+        //    serverSocket.send(sendPacket);
+        // }
+        /*
         while (true) {
             try {
                 // set a incoming package size, and wait for incoming package
@@ -79,9 +128,9 @@ public class Server implements Runnable {
 
             } catch (IOException ex) {
                 Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
-            }
-        }
-
+    }
+    }
+         */
     }
 
     private void sendACK(int id, InetAddress hostname, int destPort) {
@@ -100,63 +149,75 @@ public class Server implements Runnable {
             System.out.println("Sending ACK, id: " + id);
         } catch (IOException ex) {
             System.out.println("ERROR while sending ACK, id: " + id);
-            Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+            Logger
+                    .getLogger(Server.class
+                            .getName()).log(Level.SEVERE, null, ex);
         }
     }
 
-    public static void handshake() throws Exception {
-        TCPPacket sendData = new TCPPacket();
-        DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
-        serverSocket.receive(receivePacket);
-        IPAddress = receivePacket.getAddress();
-        port = receivePacket.getPort();
-        TCPPacket receivedData = new TCPPacket(new String(receivePacket.getData()));
-
-        if (receivedData.synchronization_bit == 1) {
-            sendData = new TCPPacket();
-            sendData.acknowledgement_number = 1;
-            sendData.synchronization_bit = 1;
-            sendData.acknowledgement_bit = 1;
-
+    /**
+     * Server waits for client to be connected
+     *
+     * @throws IOException when socket fails
+     */
+    public void handShake() throws IOException {
+        DatagramPacket packetIN = new DatagramPacket(this.receiveData, this.receiveData.length);
+        // Whait for client to connect
+        this.socket.receive(packetIN);
+        InetAddress clientAddress = packetIN.getAddress();
+        int clientPort = packetIN.getPort();
+        TCPPacket receivePacket = new TCPPacket(new String(packetIN.getData()));
+        // check if is a synchronization package
+        if (receivePacket.synchronizationBit == 1) {
+            // Send synchronization ACK
+            TCPPacket sendData = new TCPPacket();
+            sendData.acknowledgementNumber = 1;
+            sendData.synchronizationBit = 1;
+            sendData.acknowledgementBit = 1;
+            // get bytes of package with empty body
             byte[] data = sendData.getHeader().getBytes();
-            DatagramPacket sendPacket = new DatagramPacket(data, data.length, IPAddress, port);
-            serverSocket.send(sendPacket);
-
-            receivePacket = new DatagramPacket(receiveData, receiveData.length);
-            serverSocket.receive(receivePacket);
-            receivedData = new TCPPacket(new String(receivePacket.getData()));
-
-            if (receivedData.synchronization_number == 1) {
-                System.out.println("Three-way Handshake Complete!");
+            DatagramPacket packetOUT = new DatagramPacket(data, data.length, clientAddress, clientPort);
+            this.socket.send(packetOUT);
+            // wait for a confirmation from the client
+            packetIN = new DatagramPacket(receiveData, receiveData.length);
+            this.socket.receive(packetIN);
+            sendData = new TCPPacket(new String(packetIN.getData()));
+            // validate if conection was made
+            if (sendData.synchronizationNumber == 1) {
+                System.out.println("Client conected, Client IP: " + clientAddress.getHostAddress() + ", Client PORT: " + clientPort);
             }
         }
+        // TODO: add when package fails
     }
 
-    public static void disconnect() throws Exception {
+    public void disconnect() throws Exception {
+        /*
         TCPPacket sendData = new TCPPacket();
-        sendData.finish_bit = 1;
+        sendData.finishBit = 1;
 
         byte[] data = sendData.getHeader().getBytes();
-        DatagramPacket sendPacket = new DatagramPacket(data, data.length, IPAddress, port);
-        serverSocket.send(sendPacket);
+        DatagramPacket sendPacket = new DatagramPacket(data, data.length, this.hostname, Server.port);
+        this.socket.send(sendPacket);
 
         DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
-        serverSocket.receive(receivePacket);
+        this.socket.receive(receivePacket);
         TCPPacket receivedData = new TCPPacket(new String(receivePacket.getData()));
 
-        if (receivedData.acknowledgement_bit == 1) {
+        if (receivedData.acknowledgementBit == 1) {
             receivePacket = new DatagramPacket(receiveData, receiveData.length);
-            serverSocket.receive(receivePacket);
+            this.socket.receive(receivePacket);
             receivedData = new TCPPacket(new String(receivePacket.getData()));
 
-            if (receivedData.finish_bit == 1) {
+            if (receivedData.finishBit == 1) {
                 sendData = new TCPPacket();
-                sendData.acknowledgement_bit = 1;
+                sendData.acknowledgementBit = 1;
 
                 data = sendData.getHeader().getBytes();
-                sendPacket = new DatagramPacket(data, data.length, IPAddress, port);
-                serverSocket.send(sendPacket);
+                sendPacket = new DatagramPacket(data, data.length, hostname, Server.port);
+                this.socket.send(sendPacket);
             }
         }
+         */
     }
+
 }

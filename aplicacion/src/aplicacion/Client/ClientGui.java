@@ -5,19 +5,23 @@
  */
 package aplicacion.Client;
 
+import aplicacion.TCPVEGAS.Server;
 import aplicacion.utils.ConsoleLogger;
 import java.net.InetAddress;
+import java.net.SocketException;
 import java.net.UnknownHostException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
  * @author bruno
  */
 public class ClientGui extends javax.swing.JFrame {
-
+    
     private Client client;
     private ConsoleLogger console;
-
+    
     private boolean connected;
 
     /**
@@ -42,6 +46,7 @@ public class ClientGui extends javax.swing.JFrame {
     private void initComponents() {
 
         jTextField1 = new javax.swing.JTextField();
+        btnConnect1 = new javax.swing.JButton();
         jLabel1 = new javax.swing.JLabel();
         jPanel1 = new javax.swing.JPanel();
         jLabel2 = new javax.swing.JLabel();
@@ -49,6 +54,7 @@ public class ClientGui extends javax.swing.JFrame {
         jLabel3 = new javax.swing.JLabel();
         txtPort = new javax.swing.JTextField();
         btnConnect = new javax.swing.JButton();
+        btnDisconnect = new javax.swing.JButton();
         jPanel2 = new javax.swing.JPanel();
         jLabel5 = new javax.swing.JLabel();
         txtCommand = new javax.swing.JTextField();
@@ -73,6 +79,8 @@ public class ClientGui extends javax.swing.JFrame {
 
         jTextField1.setText("jTextField1");
 
+        btnConnect1.setText("Connect");
+
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
         jLabel1.setFont(new java.awt.Font("Tahoma", 0, 18)); // NOI18N
@@ -90,6 +98,13 @@ public class ClientGui extends javax.swing.JFrame {
             }
         });
 
+        btnDisconnect.setText("Disconect");
+        btnDisconnect.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnDisconnectActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
         jPanel1Layout.setHorizontalGroup(
@@ -104,6 +119,8 @@ public class ClientGui extends javax.swing.JFrame {
                     .addComponent(txtPort, javax.swing.GroupLayout.PREFERRED_SIZE, 162, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(jLabel3))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addComponent(btnDisconnect, javax.swing.GroupLayout.PREFERRED_SIZE, 162, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(btnConnect, javax.swing.GroupLayout.PREFERRED_SIZE, 159, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap())
         );
@@ -112,6 +129,7 @@ public class ClientGui extends javax.swing.JFrame {
             .addGroup(jPanel1Layout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
+                    .addComponent(btnDisconnect, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addGroup(jPanel1Layout.createSequentialGroup()
                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                             .addComponent(jLabel2)
@@ -349,24 +367,27 @@ public class ClientGui extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void btnConnectActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnConnectActionPerformed
-        // Create a new client even when no param were provided
         try {
+            // Create a new client, even when no param were provided
             this.client = new Client(
                     ("".equals(this.txtAddress.getText())) ? InetAddress.getLocalHost() : InetAddress.getByName(this.txtAddress.getText()),
-                    Integer.parseInt(("".equals(this.txtPort.getText())) ? "5000" : this.txtPort.getText()),
+                    ("".equals(this.txtPort.getText())) ? Server.PORT : Integer.parseInt(this.txtPort.getText()),
                     this.txtOutput,
                     this.txtConsole
             );
-            
             this.client.start();
-        } catch (UnknownHostException e) {
-            console.error("Constructing client");
+            // set state for GUI
+            this.connected = this.client.isConnected();
+            this.btnConnect.setEnabled(!this.connected);
+        } catch (Exception e) {
+            this.console.error("Can't initialize and connect client");
+            this.connected = false;
         }
     }//GEN-LAST:event_btnConnectActionPerformed
 
     private void btnSendActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSendActionPerformed
         if (this.connected && !"".equals(this.txtCommand.getText())) {
-            this.client.sendMessage(this.txtCommand.getText());
+            //this.client.sendMessage(this.txtCommand.getText());
             this.txtInput.append(this.txtCommand.getText() + "\n");
             this.txtCommand.setText("");
         } else if (!this.connected) {
@@ -375,6 +396,17 @@ public class ClientGui extends javax.swing.JFrame {
             console.warning("There is no comand to execute");
         }
     }//GEN-LAST:event_btnSendActionPerformed
+
+    private void btnDisconnectActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnDisconnectActionPerformed
+        try {
+            this.client.disconnect();
+            
+        } catch (Exception ex) {
+            Logger.getLogger(ClientGui.class
+                    .getName()).log(Level.SEVERE, null, ex);
+        }
+        // TODO: disconect connected var
+    }//GEN-LAST:event_btnDisconnectActionPerformed
 
     /**
      * @param args the command line arguments
@@ -390,16 +422,24 @@ public class ClientGui extends javax.swing.JFrame {
                 if ("Nimbus".equals(info.getName())) {
                     javax.swing.UIManager.setLookAndFeel(info.getClassName());
                     break;
+                    
                 }
             }
         } catch (ClassNotFoundException ex) {
-            java.util.logging.Logger.getLogger(ClientGui.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(ClientGui.class
+                    .getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            
         } catch (InstantiationException ex) {
-            java.util.logging.Logger.getLogger(ClientGui.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(ClientGui.class
+                    .getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            
         } catch (IllegalAccessException ex) {
-            java.util.logging.Logger.getLogger(ClientGui.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(ClientGui.class
+                    .getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            
         } catch (javax.swing.UnsupportedLookAndFeelException ex) {
-            java.util.logging.Logger.getLogger(ClientGui.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(ClientGui.class
+                    .getName()).log(java.util.logging.Level.SEVERE, null, ex);
         }
         //</editor-fold>
 
@@ -413,6 +453,8 @@ public class ClientGui extends javax.swing.JFrame {
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton btnConnect;
+    private javax.swing.JButton btnConnect1;
+    private javax.swing.JButton btnDisconnect;
     private javax.swing.JButton btnSend;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
