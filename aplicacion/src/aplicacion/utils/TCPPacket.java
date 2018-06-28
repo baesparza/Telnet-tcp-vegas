@@ -49,7 +49,7 @@ public class TCPPacket {
         this.sequenceNumber = Integer.parseInt(data[6]);
 
         if (data.length == 8) {
-            this.body = data[7].trim();
+            this.body = data[7];
         }
     }
 // sequense
@@ -73,18 +73,6 @@ public class TCPPacket {
                 + "Body: " + this.body;
     }
 
-    /*
-    public String getHeader(String data, int fragementNumber) {
-        return this.acknowledgementNumber + TCPPacket.SEPARATOR
-                + this.synchronizationBit + TCPPacket.SEPARATOR
-                + this.acknowledgementBit + TCPPacket.SEPARATOR
-                + this.finishBit + TCPPacket.SEPARATOR
-                + this.windowSize + TCPPacket.SEPARATOR
-                + TCPPacket.getChecksum(data) + TCPPacket.SEPARATOR
-                + fragementNumber + TCPPacket.SEPARATOR
-                + data;
-    }
-     */
     public String getHeader() {
         return this.synchronizationBit + TCPPacket.SEPARATOR
                 + this.acknowledgementBit + TCPPacket.SEPARATOR
@@ -103,7 +91,7 @@ public class TCPPacket {
      * @return checksum algorithm output
      */
     public static long getChecksum(String data) {
-        byte[] bytes = data.getBytes();
+        byte[] bytes = data.trim().getBytes();
         CRC32 checksum = new CRC32();
         checksum.update(bytes, 0, bytes.length);
         return checksum.getValue();
@@ -147,5 +135,14 @@ public class TCPPacket {
         // TODO: fix timer
         long time = (new Date()).getTime() - startTime;
         return time > 2000;
+    }
+
+    private static Thread timerThread(final int seconds) {
+        return new Thread(() -> {
+            try {
+                Thread.sleep(seconds * 1000);
+            } catch (InterruptedException ie) {
+            }
+        });
     }
 }

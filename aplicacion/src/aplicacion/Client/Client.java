@@ -1,6 +1,5 @@
 package aplicacion.Client;
 
-import aplicacion.utils.ConsoleLogger;
 import aplicacion.utils.OutputList;
 import aplicacion.utils.TCPPacket;
 import java.io.IOException;
@@ -20,7 +19,6 @@ public class Client implements Runnable {
     private final InetAddress serverAddess;
     private final DatagramSocket socket;
     private Thread thread;
-    private final byte[] receiveData;
 
     private final OutputList outputList;
     private final JTextArea textArea;
@@ -47,7 +45,6 @@ public class Client implements Runnable {
         // init socket and other fields
         this.socket = new DatagramSocket();
         this.outputList = new OutputList();
-        this.receiveData = new byte[1024];
         this.connected = false;
         // connect client to server
         this.handshake();
@@ -66,34 +63,28 @@ public class Client implements Runnable {
      */
     @Override
     public void run() {
-        // TODO: add valid while
-        /*
-        
-        
-        
-        
-        
-        while (true) {
+        while (this.connected) {
+            byte[] receiveData = new byte[1024];
             try {
-                byte data[] = new byte[100];
-                DatagramPacket packetIN = new DatagramPacket(data, data.length);
-                socket.receive(packetIN); // wait for packagethis.textArea.append("\nPaquete recibido:"
-                // validate if type of package is ACK or a response
-                if (FTPPackage.isACK(new String(packetIN.getData()))) {
+                DatagramPacket packetIN = new DatagramPacket(receiveData, receiveData.length);
+                this.socket.receive(packetIN);
+                TCPPacket packet = new TCPPacket(new String(packetIN.getData()));
+                // get type of packet
+                if (packet.checksum != 0) {
+                    // packet has data
+
+                } else if (packet.acknowledgementBit == 1) {
+                    // it's an ACK
                     // tell package ack has arrived
-                    ACKPackage ack = (ACKPackage) FTPPackage.getPackage(new String(packetIN.getData()));
-                    console.info("Recieved ACK, ID: " + ack.id);
-                    this.outputList.receivedACK(ack.id);
-                    continue;
+                    console.info("Recieved ACK, sequence: " + packet.sequenceNumber);
+                    this.outputList.receivedACK(packet.sequenceNumber);
                 }
-                // package is a response from server
             } catch (IOException ex) {
-                console.error("Socket recieve packet in");
+                System.out.println("Socket fail at receive");
             }
         }
 
         this.socket.close();
-         */
     }
 
     /**
@@ -124,6 +115,7 @@ public class Client implements Runnable {
      * @throws java.lang.Exception if socket error
      */
     public void handshake() throws Exception {
+        byte[] receiveData = new byte[1024];
         // create new synchronization packet and send it to server
         TCPPacket sendData = new TCPPacket();
         sendData.synchronizationBit = 1;
@@ -131,7 +123,7 @@ public class Client implements Runnable {
         DatagramPacket packetOUT = new DatagramPacket(data, data.length, this.serverAddess, this.serverPort);
         this.socket.send(packetOUT);
         // wait for a synchronization ACK packet from server
-        DatagramPacket packetIN = new DatagramPacket(this.receiveData, this.receiveData.length);
+        DatagramPacket packetIN = new DatagramPacket(receiveData, receiveData.length);
         this.socket.receive(packetIN);
         TCPPacket receivedData = new TCPPacket(new String(packetIN.getData()));
         // validate if it's a synchronization ACK packet
@@ -157,13 +149,14 @@ public class Client implements Runnable {
      */
     public void disconnect() throws IOException {
         // send an disconnect package server
+        byte[] receiveData = new byte[1024];
         TCPPacket sendData = new TCPPacket();
         sendData.finishBit = 1;
         byte[] data = sendData.getHeader().getBytes();
         DatagramPacket sendPacket = new DatagramPacket(data, data.length, this.serverAddess, this.serverPort);
         this.socket.send(sendPacket);
         // wait for an finish ACK from server
-        DatagramPacket receivePacket = new DatagramPacket(this.receiveData, receiveData.length);
+        DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
         this.socket.receive(receivePacket);
         TCPPacket receivedData = new TCPPacket(new String(receivePacket.getData()));
         // validate if it's a finish ACK

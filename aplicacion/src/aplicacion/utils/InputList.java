@@ -1,6 +1,5 @@
 package aplicacion.utils;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -9,7 +8,7 @@ import java.util.List;
  * @author bruno
  */
 public class InputList {
-    
+
     private final List<TCPPacket> packages;
 
     /**
@@ -98,5 +97,5 @@ public class InputList {
         }
         return packages.get(packages.size() - 1);
     }
-    
+
 }

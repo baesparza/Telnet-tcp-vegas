@@ -6,7 +6,6 @@
 package aplicacion.Client;
 
 import aplicacion.TCPVEGAS.Server;
-import aplicacion.utils.ConsoleLogger;
 import java.io.IOException;
 import java.net.InetAddress;
 

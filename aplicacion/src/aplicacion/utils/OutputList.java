@@ -1,6 +1,6 @@
 package aplicacion.utils;
 
-import com.sun.javafx.scene.control.skin.VirtualFlow;
+import aplicacion.Client.ConsoleLogger;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -14,7 +14,7 @@ import java.util.List;
  */
 public class OutputList {
 
-    private List<TCPPacket> packets;
+    private final List<TCPPacket> packets;
     private int window_size;
     private boolean canReceive;
     private int min, max;
@@ -53,7 +53,16 @@ public class OutputList {
      * @param cLog log error messages
      */
     public void sendPackages(DatagramSocket output, InetAddress hostname, int port, ConsoleLogger cLog) {
-
+        for (int i = 0; i < this.packets.size(); i++) {
+            TCPPacket pck = this.packets.get(i);
+            try {
+                this.packageSender(pck, output, hostname, port);
+                cLog.info("Send pack sequence: " + pck.sequenceNumber);
+            } catch (IOException ex) {
+                cLog.error("Package with sequence: " + pck.sequenceNumber + " not sended");
+            }
+        }
+        /*
         while (this.min < this.packets.size()) {
             // lock imput packages 
             this.canReceive = false;
@@ -101,6 +110,7 @@ public class OutputList {
         this.canReceive = true;
         this.min = 0;
         this.max = this.window_size = 1;
+         */
     }
 
     /**
@@ -117,18 +127,19 @@ public class OutputList {
         byte[] packetData = packet.getHeader().getBytes();
         DatagramPacket pack = new DatagramPacket(packetData, packetData.length, hostname, port);
         output.send(pack);
+        System.out.println(new String(pack.getData()));
         packet.setACKwaiting(true);
         packet.statTimer();
     }
 
-    public void receivedACK(int id) {
-        /*
-        if (this.packages.isEmpty() || this.packages.size() < id) {
+    public void receivedACK(int sequenceNumber) {
+
+        if (this.packets.isEmpty() || this.packets.size() < sequenceNumber) {
             return;
         }
-        DATAPackage pck = this.packages.get(id);
+        TCPPacket pck = this.packets.get(sequenceNumber);
         pck.setACKreceived(true);
         pck.setACKwaiting(false);
-         */
+
     }
 }

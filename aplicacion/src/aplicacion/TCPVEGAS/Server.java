@@ -7,7 +7,6 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
-import java.util.logging.Level;
 
 /**
  *
@@ -23,7 +22,6 @@ public final class Server implements Runnable {
     private DatagramSocket socket;
     private Thread thread;
     private InputList listPackages;
-    private byte[] receiveData;
 
     /**
      * Initialize server and start listening for a handShake
@@ -32,7 +30,6 @@ public final class Server implements Runnable {
         try {
             listPackages = new InputList();
             this.socket = new DatagramSocket(Server.PORT);
-            receiveData = new byte[1024];
             this.handShake();
         } catch (SocketException ex) {
             System.out.println("Can't initialize socket");
@@ -56,10 +53,10 @@ public final class Server implements Runnable {
      */
     @Override
     public void run() {
-
         while (true) {
+            byte[] receiveData = new byte[1024];
             try {
-                DatagramPacket packetIN = new DatagramPacket(this.receiveData, this.receiveData.length);
+                DatagramPacket packetIN = new DatagramPacket(receiveData, receiveData.length);
                 this.socket.receive(packetIN);
                 TCPPacket packet = new TCPPacket(new String(packetIN.getData()));
                 // get type of packet
@@ -109,7 +106,8 @@ public final class Server implements Runnable {
      * @throws IOException when socket fails
      */
     public void handShake() throws IOException {
-        DatagramPacket packetIN = new DatagramPacket(this.receiveData, this.receiveData.length);
+        byte[] receiveData = new byte[1024];
+        DatagramPacket packetIN = new DatagramPacket(receiveData, receiveData.length);
         // Whait for client to connect
         this.socket.receive(packetIN);
         InetAddress clientAddress = packetIN.getAddress();
