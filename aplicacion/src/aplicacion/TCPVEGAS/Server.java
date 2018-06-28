@@ -8,13 +8,12 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
 import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  *
  * @author bruno
  */
-public class Server implements Runnable {
+public final class Server implements Runnable {
 
     /**
      * Default port for sever
@@ -23,7 +22,7 @@ public class Server implements Runnable {
 
     private DatagramSocket socket;
     private Thread thread;
-    //    private InputList listPackages;
+    private InputList listPackages;
     private byte[] receiveData;
 
     /**
@@ -31,14 +30,14 @@ public class Server implements Runnable {
      */
     public Server() {
         try {
-            //  listPackages = new InputList();
+            listPackages = new InputList();
             this.socket = new DatagramSocket(Server.PORT);
             receiveData = new byte[1024];
             this.handShake();
         } catch (SocketException ex) {
             System.out.println("Can't initialize socket");
             System.exit(1);
-        } catch (Exception ex) {
+        } catch (IOException ex) {
             System.out.println("Can't initailize handshake");
             System.exit(1);
         }
@@ -64,71 +63,44 @@ public class Server implements Runnable {
                 this.socket.receive(packetIN);
                 TCPPacket packet = new TCPPacket(new String(packetIN.getData()));
                 // get type of packet
-                if (packet.finishBit == 1) {
+                if (packet.checksum != 0) {
+                    // packet has data
+                    if (this.listPackages.add(packet)) {
+                        this.sendACK(packet.sequenceNumber, packetIN.getAddress(), packetIN.getPort());
+                        // veryfy if all packages have been receibed
+                        if (this.listPackages.hasEnded()) {
+                            // pass data to application
+                            System.out.println(this.listPackages.getMessage());
+                            this.listPackages.clear();
+                        }
+                    } else {
+                        System.out.println("Invalid package have been deleted");
+                    }
+                } else if (packet.finishBit == 1) {
                     // client wants to disconnect
                     this.disconnect(packetIN.getAddress(), packetIN.getPort());
                     System.exit(0);
                 }
             } catch (IOException ex) {
-                Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+                System.out.println("Socket fail at receive");
             }
         }
-        /*
-        while (true) {
-            try {
-                // set a incoming package size, and wait for incoming package
-                DatagramPacket packageIN = new DatagramPacket(new byte[100], 100);
-                socket.receive(packageIN);
-                // new package in, get type
-                if (FTPPackage.isACK(new String(packageIN.getData()))) {
-                    // package is an ACK from client
-                    continue;
-                }
-                // This package is not an ACK, it has data
-                // if valid, store this data, and wait for full message
-                DATAPackage dataPackage = (DATAPackage) FTPPackage.getPackage(new String(packageIN.getData()));
-                // if after validations is valid, add package 
-                if (listPackages.add(dataPackage)) {
-                    this.sendACK(dataPackage.id, packageIN.getAddress(), packageIN.getPort());
-                    // veryfy if all packages have been receibed
-                    if (listPackages.hasEnded()) {
-                        // pass data to application
-                        System.out.println(listPackages.getMessage());
-                        listPackages.clear();
-                    }
-                } else {
-                    System.out.println("Invalid package have been deleted");
-                }
-
-            } catch (IOException ex) {
-                Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
-    }
-    }
-         */
     }
 
-    private void sendACK(int id, InetAddress hostname, int destPort) {
-        /*
+    private void sendACK(int sequenceNumber, InetAddress hostname, int destPort) {
         try {
-            // generate package with usefull data for tcp-vegas
-            ACKPackage dataPack = new ACKPackage(id);
-
-            DatagramPacket pack = new DatagramPacket(
-                    dataPack.getBytes(),
-                    dataPack.getBytes().length,
-                    hostname,
-                    destPort
-            );
-            // send package with data, checksum, seq number, and datagramPacketdata
+            // generate ack TCPPackage 
+            TCPPacket packet = new TCPPacket();
+            packet.acknowledgementBit = 1;
+            packet.sequenceNumber = sequenceNumber;
+            // Send packet
+            byte[] data = packet.getHeader().getBytes();
+            DatagramPacket pack = new DatagramPacket(data, data.length, hostname, destPort);
             socket.send(pack);
-            System.out.println("Sending ACK, id: " + id);
+            System.out.println("Sending ACK, sequence: " + sequenceNumber);
         } catch (IOException ex) {
-            System.out.println("ERROR while sending ACK, id: " + id);
-            Logger
-                    .getLogger(Server.class
-                            .getName()).log(Level.SEVERE, null, ex);
+            System.out.println("ERROR while sending ACK, sequence: " + sequenceNumber);
         }
-         */
     }
 
     /**
@@ -147,7 +119,7 @@ public class Server implements Runnable {
         if (receivePacket.synchronizationBit == 1) {
             // Send synchronization ACK
             TCPPacket packet = new TCPPacket();
-            packet.acknowledgementNumber = 1;
+            // TODO: create sync packet and sync ack
             packet.synchronizationBit = 1;
             packet.acknowledgementBit = 1;
             // get bytes of package with empty body

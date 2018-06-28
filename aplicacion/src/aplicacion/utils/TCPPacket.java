@@ -13,13 +13,13 @@ public class TCPPacket {
     public static final String SEPARATOR = ";";
 
     // TODO: add segment
-    public int acknowledgementNumber = 0;
     public int synchronizationBit = 0;
     public int acknowledgementBit = 0;
     public int finishBit = 0;
     public int windowSize = 0;
     public long checksum = 0;
     public int fragementNumber = 0;
+    public int sequenceNumber = 0;
     public String body = "";
 
     private boolean ACKreceived = false;
@@ -40,31 +40,40 @@ public class TCPPacket {
     public TCPPacket(String rawData) {
         String data[] = rawData.split(TCPPacket.SEPARATOR);
 
-        this.acknowledgementNumber = Integer.parseInt(data[0]);
-        this.synchronizationBit = Integer.parseInt(data[1]);
-        this.acknowledgementBit = Integer.parseInt(data[2]);
-        this.finishBit = Integer.parseInt(data[3]);
-        this.windowSize = Integer.parseInt(data[4]);
-        this.checksum = Long.parseLong(data[5]);
-        this.fragementNumber = Integer.parseInt(data[6]);
+        this.synchronizationBit = Integer.parseInt(data[0]);
+        this.acknowledgementBit = Integer.parseInt(data[1]);
+        this.finishBit = Integer.parseInt(data[2]);
+        this.windowSize = Integer.parseInt(data[3]);
+        this.checksum = Long.parseLong(data[4]);
+        this.fragementNumber = Integer.parseInt(data[5]);
+        this.sequenceNumber = Integer.parseInt(data[6]);
 
         if (data.length == 8) {
-            this.body = data[7];
+            this.body = data[7].trim();
         }
+    }
+// sequense
+
+    public TCPPacket(int sequenceNumber, int fragementNumber, String body) {
+        this.body = body;
+        this.fragementNumber = fragementNumber;
+        this.sequenceNumber = sequenceNumber;
+        this.checksum = TCPPacket.getChecksum(body);
     }
 
     @Override
     public String toString() {
-        return "Acknowledgement Number: " + this.acknowledgementNumber + '\n'
-                + "Synchronization Bit: " + this.synchronizationBit + '\n'
+        return "Synchronization Bit: " + this.synchronizationBit + '\n'
                 + "Acknowledgement Bit: " + this.acknowledgementBit + '\n'
                 + "Finish Bit: " + this.finishBit + '\n'
                 + "Window Size: " + this.windowSize + '\n'
                 + "Checksum: " + this.checksum + '\n'
                 + "Fragment Number: " + this.fragementNumber + '\n'
+                + "Sequense Number: " + this.sequenceNumber + '\n'
                 + "Body: " + this.body;
     }
 
+    /*
     public String getHeader(String data, int fragementNumber) {
         return this.acknowledgementNumber + TCPPacket.SEPARATOR
                 + this.synchronizationBit + TCPPacket.SEPARATOR
@@ -75,15 +84,15 @@ public class TCPPacket {
                 + fragementNumber + TCPPacket.SEPARATOR
                 + data;
     }
-
+     */
     public String getHeader() {
-        return this.acknowledgementNumber + TCPPacket.SEPARATOR
-                + this.synchronizationBit + TCPPacket.SEPARATOR
+        return this.synchronizationBit + TCPPacket.SEPARATOR
                 + this.acknowledgementBit + TCPPacket.SEPARATOR
                 + this.finishBit + TCPPacket.SEPARATOR
                 + this.windowSize + TCPPacket.SEPARATOR
                 + this.checksum + TCPPacket.SEPARATOR
                 + this.fragementNumber + TCPPacket.SEPARATOR
+                + this.sequenceNumber + TCPPacket.SEPARATOR
                 + body;
     }
 
@@ -93,10 +102,10 @@ public class TCPPacket {
      * @param data input
      * @return checksum algorithm output
      */
-    public static long getChecksum(String body) {
-        byte[] data = body.getBytes();
+    public static long getChecksum(String data) {
+        byte[] bytes = data.getBytes();
         CRC32 checksum = new CRC32();
-        checksum.update(data, 0, data.length);
+        checksum.update(bytes, 0, bytes.length);
         return checksum.getValue();
     }
 
@@ -106,9 +115,8 @@ public class TCPPacket {
      * @param checkSum value
      * @param data to be proceed and compared
      * @return
-     * @throws IOException
      */
-    public static boolean validChecksum(long checkSum, String data) throws IOException {
+    public static boolean validChecksum(long checkSum, String data) {
         return checkSum == TCPPacket.getChecksum(data);
     }
 

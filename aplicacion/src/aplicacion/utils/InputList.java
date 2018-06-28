@@ -9,8 +9,8 @@ import java.util.List;
  * @author bruno
  */
 public class InputList {
-
-    private final List<DATAPackage> packages;
+    
+    private final List<TCPPacket> packages;
 
     /**
      * Class to manage packages, by sorting them while being received
@@ -22,38 +22,32 @@ public class InputList {
     /**
      * Add Packages in sorted way for later usage, delete repeated and invalid
      *
-     * @param pack of data
+     * @param packet of data
      * @return true if package has been added or repeated, false if deleted
-     * @throws java.io.IOException
      */
-    public boolean add(DATAPackage pack) throws IOException {
+    public boolean add(TCPPacket packet) {
         // validate if is a valid package to be added
-        if (!DATAPackage.validChecksum(pack.checkSum, pack.data.getBytes())) {
+        if (!TCPPacket.validChecksum(packet.checksum, packet.body)) {
             return false;
         }
         // package can be added
-        int id = pack.id;
+        int sequenceNumber = packet.sequenceNumber;
         // search position backwards, to add higher id's to the end
         for (int i = packages.size() - 1; i >= 0; i--) {
-            if (packages.get(i).id == id) {
+            if (packages.get(i).sequenceNumber == sequenceNumber) {
                 // package is already in the list
                 return true;
             }
-            if (packages.get(i).id > id) {
+            if (packages.get(i).sequenceNumber > sequenceNumber) {
                 continue;
             }
             // found position
-            packages.add(i + 1, pack);
+            packages.add(i + 1, packet);
             return true;
         }
-        if (id == packages.size()) {
-            // package needs to be added to the end
-            // may be the first package in the list
-            packages.add(pack);
-            return true;
-        }
-        // something whent worng and not been added
-        return false;
+        // position not found, add to end
+        packages.add(packet);
+        return true;
     }
 
     /**
@@ -70,8 +64,8 @@ public class InputList {
      */
     public String getMessage() {
         StringBuilder resp = new StringBuilder();
-        for (DATAPackage p : packages) {
-            resp.append(p.data);
+        for (TCPPacket p : packages) {
+            resp.append(p.body);
         }
         return resp.toString();
     }
@@ -88,21 +82,21 @@ public class InputList {
             // no packages
             return false;
         }
-        return 0 == packages.get(packages.size() - 1).fragement;
+        return 0 == packages.get(packages.size() - 1).fragementNumber;
     }
 
     /**
-     * TODO: add segment package.............................................
+     * TODO: return last segment package ......................................
      * Get last from a segment package from the array
      *
      * @return
      */
-    public DATAPackage getLastPackage() {
+    public TCPPacket getLastPackage() {
         if (packages.isEmpty()) {
             // no packages
             return null;
         }
         return packages.get(packages.size() - 1);
     }
-
+    
 }

@@ -9,10 +9,6 @@ import aplicacion.TCPVEGAS.Server;
 import aplicacion.utils.ConsoleLogger;
 import java.io.IOException;
 import java.net.InetAddress;
-import java.net.SocketException;
-import java.net.UnknownHostException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  *
@@ -392,7 +388,7 @@ public class ClientGui extends javax.swing.JFrame {
 
     private void btnSendActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSendActionPerformed
         if (this.connected && !"".equals(this.txtCommand.getText())) {
-            //this.client.sendMessage(this.txtCommand.getText());
+            this.client.sendMessage(this.txtCommand.getText());
             this.txtInput.append(this.txtCommand.getText() + "\n");
             this.txtCommand.setText("");
         } else if (!this.connected) {

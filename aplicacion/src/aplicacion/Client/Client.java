@@ -22,7 +22,7 @@ public class Client implements Runnable {
     private Thread thread;
     private final byte[] receiveData;
 
-    private OutputList outputList;
+    private final OutputList outputList;
     private final JTextArea textArea;
     private final ConsoleLogger console;
     private boolean connected;
@@ -46,7 +46,7 @@ public class Client implements Runnable {
         this.textArea = textArea;
         // init socket and other fields
         this.socket = new DatagramSocket();
-        //  this.outputList = new OutputList();
+        this.outputList = new OutputList();
         this.receiveData = new byte[1024];
         this.connected = false;
         // connect client to server
@@ -102,32 +102,20 @@ public class Client implements Runnable {
      *
      * @param message to be sent
      */
-    public void sendMessage(String message) throws IOException {
-        /*
-        try {
-            String[] array = message.split("");
-            for (int i = 0; i < array.length; i++) {
-                // gen package and add it to the list
-                if (!this.outputList.addPackage(new DATAPackage(i, array[i], (i + 1) < array.length ? 1 : 0))) {
-                    // package was not added
-                    this.console.warning("Package could not be added to list, packages are still being sent");
-                }
+    public void sendMessage(String message) {
+        String[] array = message.split("");
+        // split message into small packages, and add them to list
+        for (int i = 0; i < array.length; i++) {
+            if (!this.outputList.addPackage(new TCPPacket(i, (i < array.length - 1) ? 1 : 0, array[i]))) {
+                // packet was not added
+                console.warning("Packet could not be added");
             }
-            this.outputList.sendPackages(this.socket, this.hostname, this.port, this.console);
-        } catch (IOException e) {
-            console.error("An error ocurred while sending message");
         }
-         */
-        TCPPacket sendData = new TCPPacket();
-        sendData.body = message;
-        byte[] data = sendData.getHeader().getBytes();
-        DatagramPacket sendPacket = new DatagramPacket(data, data.length, this.serverAddess, this.serverPort);
-        this.socket.send(sendPacket);
-
-        System.out.println("------------Sent-----------");
-        sendData.getHeader();
-        System.out.println("---------------------------\n");
-
+        //try {
+        this.outputList.sendPackages(this.socket, this.serverAddess, this.serverPort, this.console);
+        //} catch (IOException e) {
+        //    console.error("An error ocurred while sending messages");
+        //}
     }
 
     /**
@@ -150,7 +138,6 @@ public class Client implements Runnable {
         if (receivedData.acknowledgementBit == 1 && receivedData.synchronizationBit == 1) {
             // send confirmation to server
             sendData = new TCPPacket();
-            sendData.acknowledgementNumber = 1;
             sendData.synchronizationBit = 1;
             sendData.acknowledgementBit = 1;
             data = sendData.getHeader().getBytes();
