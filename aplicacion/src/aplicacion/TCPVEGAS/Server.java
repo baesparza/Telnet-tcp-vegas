@@ -64,41 +64,19 @@ public class Server implements Runnable {
 
         while (true) {
             try {
-                receiveData = new byte[1024];
-                DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
-                this.socket.receive(receivePacket);
-                TCPPacket receivedData = new TCPPacket(new String(receivePacket.getData()));
-
-                System.out.println("----------Received---------");
-                System.out.println(receivedData.getHeader());
-                System.out.println("---------------------------\n");
-
-                if (receivedData.body.indexOf("quit") != -1) {
-                    System.out.println("Request to disconnect.");
-                    disconnect();
-                    break;
+                DatagramPacket packetIN = new DatagramPacket(this.receiveData, this.receiveData.length);
+                this.socket.receive(packetIN);
+                TCPPacket packet = new TCPPacket(new String(packetIN.getData()));
+                // get type of packet
+                if (packet.finishBit == 1) {
+                    // client wants to disconnect
+                    this.disconnect(packetIN.getAddress(), packetIN.getPort());
+                    System.exit(0);
                 }
             } catch (IOException ex) {
                 Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
-            } catch (Exception ex) {
-                Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
-
-        this.socket.close();
-
-        // while(true){
-        //    DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
-        //    serverSocket.receive(receivePacket);
-        //    String sentence = new String(receivePacket.getData());
-        //    System.out.println("RECEIVED: " + sentence);
-        //    IPAddress = receivePacket.getAddress();
-        //    port = receivePacket.getPort();
-        //    String capitalizedSentence = sentence.toUpperCase();
-        //    sendData = capitalizedSentence.getBytes();
-        //    DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, IPAddress, port);
-        //    serverSocket.send(sendPacket);
-        // }
         /*
         while (true) {
             try {
@@ -190,34 +168,25 @@ public class Server implements Runnable {
         // TODO: add when package fails
     }
 
-    public void disconnect() throws Exception {
-        /*
-        TCPPacket sendData = new TCPPacket();
-        sendData.finishBit = 1;
-
-        byte[] data = sendData.getHeader().getBytes();
-        DatagramPacket sendPacket = new DatagramPacket(data, data.length, this.hostname, Server.port);
-        this.socket.send(sendPacket);
-
-        DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
-        this.socket.receive(receivePacket);
-        TCPPacket receivedData = new TCPPacket(new String(receivePacket.getData()));
-
-        if (receivedData.acknowledgementBit == 1) {
-            receivePacket = new DatagramPacket(receiveData, receiveData.length);
-            this.socket.receive(receivePacket);
-            receivedData = new TCPPacket(new String(receivePacket.getData()));
-
-            if (receivedData.finishBit == 1) {
-                sendData = new TCPPacket();
-                sendData.acknowledgementBit = 1;
-
-                data = sendData.getHeader().getBytes();
-                sendPacket = new DatagramPacket(data, data.length, hostname, Server.port);
-                this.socket.send(sendPacket);
-            }
+    /**
+     * TODO: add timer when trigger started
+     *
+     * @param clientAddress
+     * @param clientPort
+     */
+    public void disconnect(InetAddress clientAddress, int clientPort) {
+        try {
+            // disconnection triggered, send finish ACK
+            TCPPacket sendData = new TCPPacket();
+            sendData.finishBit = 1;
+            sendData.acknowledgementBit = 1;
+            byte[] data = sendData.getHeader().getBytes();
+            DatagramPacket sendPacket = new DatagramPacket(data, data.length, clientAddress, clientPort);
+            this.socket.send(sendPacket);
+            System.out.println("Client disconnected");
+        } catch (IOException ex) {
+            System.out.println("Can't send finish ACK");
         }
-         */
     }
 
 }

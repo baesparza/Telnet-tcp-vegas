@@ -7,6 +7,7 @@ package aplicacion.Client;
 
 import aplicacion.TCPVEGAS.Server;
 import aplicacion.utils.ConsoleLogger;
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
@@ -18,10 +19,10 @@ import java.util.logging.Logger;
  * @author bruno
  */
 public class ClientGui extends javax.swing.JFrame {
-    
+
     private Client client;
     private ConsoleLogger console;
-    
+
     private boolean connected;
 
     /**
@@ -33,7 +34,10 @@ public class ClientGui extends javax.swing.JFrame {
         this.txtInput.setEditable(false);
         this.txtOutput.setEditable(false);
         this.connected = false;
-        console = new ConsoleLogger(txtConsole);
+        this.console = new ConsoleLogger(txtConsole);
+
+        // set state of GUI
+        this.btnDisconnect.setEnabled(false);
     }
 
     /**
@@ -98,7 +102,7 @@ public class ClientGui extends javax.swing.JFrame {
             }
         });
 
-        btnDisconnect.setText("Disconect");
+        btnDisconnect.setText("Disconnect");
         btnDisconnect.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 btnDisconnectActionPerformed(evt);
@@ -379,6 +383,7 @@ public class ClientGui extends javax.swing.JFrame {
             // set state for GUI
             this.connected = this.client.isConnected();
             this.btnConnect.setEnabled(!this.connected);
+            this.btnDisconnect.setEnabled(this.connected);
         } catch (Exception e) {
             this.console.error("Can't initialize and connect client");
             this.connected = false;
@@ -400,12 +405,18 @@ public class ClientGui extends javax.swing.JFrame {
     private void btnDisconnectActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnDisconnectActionPerformed
         try {
             this.client.disconnect();
-            
-        } catch (Exception ex) {
-            Logger.getLogger(ClientGui.class
-                    .getName()).log(Level.SEVERE, null, ex);
+
+        } catch (IOException ex) {
+            this.connected = this.client.isConnected();
+            if (this.connected) {
+                this.console.error("Can't disconnect from server");
+            }
         }
-        // TODO: disconect connected var
+        this.console.info("Disconnect from server");
+        // set state for GUI
+        this.connected = this.client.isConnected();
+        //  this.btnConnect.setEnabled(!this.connected);
+        this.btnDisconnect.setEnabled(this.connected);
     }//GEN-LAST:event_btnDisconnectActionPerformed
 
     /**
@@ -422,21 +433,21 @@ public class ClientGui extends javax.swing.JFrame {
                 if ("Nimbus".equals(info.getName())) {
                     javax.swing.UIManager.setLookAndFeel(info.getClassName());
                     break;
-                    
+
                 }
             }
         } catch (ClassNotFoundException ex) {
             java.util.logging.Logger.getLogger(ClientGui.class
                     .getName()).log(java.util.logging.Level.SEVERE, null, ex);
-            
+
         } catch (InstantiationException ex) {
             java.util.logging.Logger.getLogger(ClientGui.class
                     .getName()).log(java.util.logging.Level.SEVERE, null, ex);
-            
+
         } catch (IllegalAccessException ex) {
             java.util.logging.Logger.getLogger(ClientGui.class
                     .getName()).log(java.util.logging.Level.SEVERE, null, ex);
-            
+
         } catch (javax.swing.UnsupportedLookAndFeelException ex) {
             java.util.logging.Logger.getLogger(ClientGui.class
                     .getName()).log(java.util.logging.Level.SEVERE, null, ex);

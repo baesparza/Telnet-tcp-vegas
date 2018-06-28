@@ -97,8 +97,8 @@ public class Client implements Runnable {
             }
         }
 
-         */
         this.socket.close();
+         */
     }
 
     /**
@@ -168,41 +168,25 @@ public class Client implements Runnable {
 
     /**
      * TODO: add timeout
-     *
-     * @return
-     * @throws Exception
      */
-    public boolean disconnect() throws Exception {
-        // send 
-        System.out.println("Requested to disconnect.");
+    public void disconnect() throws IOException {
+        // send an disconnect package server
         TCPPacket sendData = new TCPPacket();
+        sendData.finishBit = 1;
         byte[] data = sendData.getHeader().getBytes();
         DatagramPacket sendPacket = new DatagramPacket(data, data.length, this.serverAddess, this.serverPort);
         this.socket.send(sendPacket);
-//////////////
+        // wait for an finish ACK from server
         DatagramPacket receivePacket = new DatagramPacket(this.receiveData, receiveData.length);
         this.socket.receive(receivePacket);
         TCPPacket receivedData = new TCPPacket(new String(receivePacket.getData()));
-
-        if (receivedData.finishBit == 1) {
-            sendData = new TCPPacket();
-            sendData.acknowledgementBit = 1;
-            data = sendData.getHeader().getBytes();
-            sendPacket = new DatagramPacket(data, data.length, this.serverAddess, this.serverPort);
-            this.socket.send(sendPacket);
-
-            sendData = new TCPPacket();
-            sendData.finishBit = 1;
-            data = sendData.getHeader().getBytes();
-            sendPacket = new DatagramPacket(data, data.length, this.serverAddess, this.serverPort);
-            this.socket.send(sendPacket);
+        // validate if it's a finish ACK
+        if (receivedData.finishBit == 1 && receivedData.acknowledgementBit == 1) {
+            // confirmation from client, close this connection
+            this.connected = false;
+            this.socket.close();
         }
-
-        receivePacket = new DatagramPacket(this.receiveData, this.receiveData.length);
-        this.socket.receive(receivePacket);
-        receivedData = new TCPPacket(new String(receivePacket.getData()));
-
-        return (receivedData.acknowledgementBit == 1);
+        // TODO: add when other packet
     }
 
     /**
