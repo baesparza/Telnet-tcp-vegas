@@ -3,15 +3,10 @@ package aplicacion.Client;
 import aplicacion.utils.ConsoleLogger;
 import aplicacion.utils.OutputList;
 import aplicacion.utils.TCPPacket;
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
-import java.net.SocketException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.swing.JTextArea;
 
 /**
@@ -23,19 +18,19 @@ public class Client implements Runnable {
     // TODO: sort variables
     private final int serverPort;
     private final InetAddress serverAddess;
-    private DatagramSocket socket;
+    private final DatagramSocket socket;
     private Thread thread;
-    private byte[] receiveData;
+    private final byte[] receiveData;
 
     private OutputList outputList;
     private final JTextArea textArea;
-    private ConsoleLogger console;
+    private final ConsoleLogger console;
     private boolean connected;
 
     /**
      * Constructor, set data for connection, initialize variables. Create new
-     * socket and add stream input/output that will let us read/write to the
-     * socket
+     * socket and add stream input/output that will let us read/write thought
+     * the socket
      *
      * @param hostname ip address of server
      * @param port of server
@@ -137,6 +132,8 @@ public class Client implements Runnable {
 
     /**
      * TODO: add timeout
+     *
+     * @throws java.lang.Exception if socket error
      */
     public void handshake() throws Exception {
         // create new synchronization packet and send it to server
@@ -153,7 +150,6 @@ public class Client implements Runnable {
         if (receivedData.acknowledgementBit == 1 && receivedData.synchronizationBit == 1) {
             // send confirmation to server
             sendData = new TCPPacket();
-            sendData.synchronizationNumber = 1;
             sendData.acknowledgementNumber = 1;
             sendData.synchronizationBit = 1;
             sendData.acknowledgementBit = 1;
@@ -167,7 +163,10 @@ public class Client implements Runnable {
     }
 
     /**
-     * TODO: add timeout
+     * TODO: add timeout ----------------------------------------------------
+     * End connection with Server
+     *
+     * @throws java.io.IOException if socket error
      */
     public void disconnect() throws IOException {
         // send an disconnect package server
