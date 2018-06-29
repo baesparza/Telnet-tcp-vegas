@@ -7,14 +7,14 @@ import java.util.List;
  *
  * @author bruno
  */
-public class InputList {
+public class Receiver {
 
     private final List<TCPPacket> packages;
 
     /**
      * Class to manage packages, by sorting them while being received
      */
-    public InputList() {
+    public Receiver() {
         this.packages = new ArrayList<>();
     }
 

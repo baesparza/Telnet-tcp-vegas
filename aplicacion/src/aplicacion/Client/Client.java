@@ -1,6 +1,6 @@
 package aplicacion.Client;
 
-import aplicacion.utils.OutputList;
+import aplicacion.utils.Sender;
 import aplicacion.utils.TCPPacket;
 import java.io.IOException;
 import java.net.DatagramPacket;
@@ -20,7 +20,7 @@ public class Client implements Runnable {
     private final DatagramSocket socket;
     private Thread thread;
 
-    private final OutputList outputList;
+    private final Sender sender;
     private final JTextArea textArea;
     private final ConsoleLogger console;
     private boolean connected;
@@ -44,7 +44,7 @@ public class Client implements Runnable {
         this.textArea = textArea;
         // init socket and other fields
         this.socket = new DatagramSocket();
-        this.outputList = new OutputList();
+        this.sender = new Sender();
         this.connected = false;
         // connect client to server
         this.handshake();
@@ -77,7 +77,7 @@ public class Client implements Runnable {
                     // it's an ACK
                     // tell package ack has arrived
                     console.info("Recieved ACK, sequence: " + packet.sequenceNumber);
-                    this.outputList.receivedACK(packet.sequenceNumber);
+                    this.sender.receivedACK(packet.sequenceNumber);
                 }
             } catch (IOException ex) {
                 System.out.println("Socket fail at receive");
@@ -97,13 +97,13 @@ public class Client implements Runnable {
         String[] array = message.split("");
         // split message into small packages, and add them to list
         for (int i = 0; i < array.length; i++) {
-            if (!this.outputList.addPackage(new TCPPacket(i, (i < array.length - 1) ? 1 : 0, array[i]))) {
+            if (!this.sender.addPackage(new TCPPacket(i, (i < array.length - 1) ? 1 : 0, array[i].equals(" ") ? "_" : array[i]))) {
                 // packet was not added
                 console.warning("Packet could not be added");
             }
         }
         //try {
-        this.outputList.sendPackages(this.socket, this.serverAddess, this.serverPort, this.console);
+        this.sender.sendPackages(this.socket, this.serverAddess, this.serverPort, this.console);
         //} catch (IOException e) {
         //    console.error("An error ocurred while sending messages");
         //}

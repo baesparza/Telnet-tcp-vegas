@@ -12,7 +12,7 @@ import java.util.List;
  *
  * @author bruno
  */
-public class OutputList {
+public class Sender {
 
     private final List<TCPPacket> packets;
     private int window_size;
@@ -22,7 +22,7 @@ public class OutputList {
     /**
      * TODO: manipulate windows size, Control packages, and resend as needed
      */
-    public OutputList() {
+    public Sender() {
         this.window_size = 1;
         this.canReceive = true;
         this.min = 0;
@@ -127,7 +127,6 @@ public class OutputList {
         byte[] packetData = packet.getHeader().getBytes();
         DatagramPacket pack = new DatagramPacket(packetData, packetData.length, hostname, port);
         output.send(pack);
-        System.out.println(new String(pack.getData()));
         packet.setACKwaiting(true);
         packet.statTimer();
     }

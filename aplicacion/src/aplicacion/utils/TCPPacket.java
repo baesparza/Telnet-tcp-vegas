@@ -49,7 +49,7 @@ public class TCPPacket {
         this.sequenceNumber = Integer.parseInt(data[6]);
 
         if (data.length == 8) {
-            this.body = data[7];
+            this.body = data[7].equals("_") ? " " : data[7];
         }
     }
 // sequense

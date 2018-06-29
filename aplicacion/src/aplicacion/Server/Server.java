@@ -1,6 +1,7 @@
-package aplicacion.TCPVEGAS;
+package aplicacion.Server;
 
-import aplicacion.utils.InputList;
+import aplicacion.utils.Receiver;
+import aplicacion.utils.Sender;
 import aplicacion.utils.TCPPacket;
 import java.io.IOException;
 import java.net.DatagramPacket;
@@ -21,14 +22,16 @@ public final class Server implements Runnable {
 
     private DatagramSocket socket;
     private Thread thread;
-    private InputList listPackages;
+    private Receiver receiver;
+    private final Sender sender;
 
     /**
      * Initialize server and start listening for a handShake
      */
     public Server() {
+        this.receiver = new Receiver();
+        this.sender = new Sender();
         try {
-            listPackages = new InputList();
             this.socket = new DatagramSocket(Server.PORT);
             this.handShake();
         } catch (SocketException ex) {
@@ -62,13 +65,13 @@ public final class Server implements Runnable {
                 // get type of packet
                 if (packet.checksum != 0) {
                     // packet has data
-                    if (this.listPackages.add(packet)) {
+                    if (this.receiver.add(packet)) {
                         this.sendACK(packet.sequenceNumber, packetIN.getAddress(), packetIN.getPort());
                         // veryfy if all packages have been receibed
-                        if (this.listPackages.hasEnded()) {
+                        if (this.receiver.hasEnded()) {
                             // pass data to application
-                            System.out.println(this.listPackages.getMessage());
-                            this.listPackages.clear();
+                            sendMessage(this.receiver.getMessage(), packetIN.getAddress(), packetIN.getPort());
+                            this.receiver.clear();
                         }
                     } else {
                         System.out.println("Invalid package have been deleted");
@@ -98,6 +101,28 @@ public final class Server implements Runnable {
         } catch (IOException ex) {
             System.out.println("ERROR while sending ACK, sequence: " + sequenceNumber);
         }
+    }
+
+    /**
+     * Transform outputData into packages, and are sent to destination. Send UDP
+     * datagrams with checksum, sequence and each word as data
+     *
+     * @param message to be sent
+     */
+    public void sendMessage(String message, InetAddress serverAddess, int serverPort) {
+        String[] array = message.split("");
+        // split message into small packages, and add them to list
+        for (int i = 0; i < array.length; i++) {
+            if (!this.sender.addPackage(new TCPPacket(i, (i < array.length - 1) ? 1 : 0, array[i].equals(" ") ? "_" : array[i]))) {
+                // packet was not added
+                System.out.println("Packet could not be added");
+            }
+        }
+        //try {
+        this.sender.sendPackages(this.socket, serverAddess, serverPort, null);
+        //} catch (IOException e) {
+        //    console.error("An error ocurred while sending messages");
+        //}
     }
 
     /**

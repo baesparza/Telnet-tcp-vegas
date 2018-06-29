@@ -5,7 +5,7 @@
  */
 package aplicacion.Client;
 
-import aplicacion.TCPVEGAS.Server;
+import aplicacion.Server.Server;
 import java.io.IOException;
 import java.net.InetAddress;
 

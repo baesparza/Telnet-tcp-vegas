@@ -1,4 +1,4 @@
-package aplicacion.TCPVEGAS;
+package aplicacion.Server;
 
 /**
  *
