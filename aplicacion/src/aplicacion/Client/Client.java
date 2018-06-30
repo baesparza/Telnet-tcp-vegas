@@ -13,19 +13,18 @@ import javax.swing.JTextArea;
  *
  * @author bruno
  */
-public class Client implements Runnable {
+public final class Client implements Runnable {
 
-    // TODO: sort variables
-    private final int serverPort;
-    private final InetAddress serverAddess;
-    private final DatagramSocket socket;
+    private final int port; // server port
+    private final InetAddress address; // server ip_v4 address
+    private final DatagramSocket socket; // transfort
     private Thread thread;
 
-    private final Sender sender;
-    private Receiver receiver;
-    private final JTextArea textArea;
-    private final ConsoleLogger console;
-    private boolean connected;
+    private final Sender sender; // manage out packets
+    private final Receiver receiver; // manage incoming packets
+    private final JTextArea textArea; // response window
+    private final ConsoleLogger console; // app console logger
+    private boolean connected; // state of connection
 
     /**
      * Constructor, set data for connection, initialize variables. Create new
@@ -38,18 +37,16 @@ public class Client implements Runnable {
      * @param txtConsole textArea to write logs
      * @throws java.lang.Exception when failed to create client
      */
-    public Client(InetAddress hostname, int port, JTextArea textArea, JTextArea txtConsole) throws Exception {
-        this.serverAddess = hostname;
-        this.serverPort = port;
-        // GUI text areas
+    public Client(final InetAddress hostname, final int port, final JTextArea textArea, final JTextArea txtConsole) throws Exception {
+        this.address = hostname;
+        this.port = port;
         this.console = new ConsoleLogger(txtConsole);
         this.textArea = textArea;
-        // init socket and other fields
         this.socket = new DatagramSocket();
         this.sender = new Sender();
         this.receiver = new Receiver();
         this.connected = false;
-        // connect client to server
+        // connect to server
         this.handshake();
     }
 
@@ -67,141 +64,135 @@ public class Client implements Runnable {
     @Override
     public void run() {
         while (this.connected) {
-            byte[] receiveData = new byte[1024];
+            byte[] buffer = new byte[1024]; // buffer
             try {
-                DatagramPacket packetIN = new DatagramPacket(receiveData, receiveData.length);
+                // wait for a packet to be received
+                DatagramPacket packetIN = new DatagramPacket(buffer, buffer.length);
                 this.socket.receive(packetIN);
-                TCPPacket packet = new TCPPacket(new String(packetIN.getData()));
+                TCPPacket tcpPacket = new TCPPacket(new String(packetIN.getData()));
                 // get type of packet
-                if (packet.checksum != 0) {
-                    // packet has data
-                    if (this.receiver.add(packet)) {
-                        this.sendACK(packet.sequenceNumber, packetIN.getAddress(), packetIN.getPort());
+                if (tcpPacket.checksum != 0) {
+                    // packet is a response, verify content, send ack if valid
+                    if (this.receiver.add(tcpPacket)) {
+                        this.sendACK(tcpPacket.sequence, packetIN.getAddress(), packetIN.getPort());
                         // veryfy if all packages have been receibed
                         if (this.receiver.hasEnded()) {
-                            // pass data to application
-                            this.textArea.append(this.receiver.getMessage());
+                            // manage data, present to app, and clear buffer
+                            console.info("Received full response");
+                            this.textArea.append(this.receiver.getMessage() + "\n\n\n");
                             this.receiver.clear();
                         }
                     } else {
-                        System.out.println("Invalid package have been deleted");
+                        console.error("Invalid package have been deleted");
                     }
-                } else if (packet.acknowledgementBit == 1) {
-                    // it's an ACK
-                    // tell package ack has arrived
-                    console.info("Recieved ACK, sequence: " + packet.sequenceNumber);
-                    this.sender.receivedACK(packet.sequenceNumber);
+                } else if (tcpPacket.acknowledgementFlag == 1) {
+                    // packet is an ACK, tell outout manager and ACK arrived
+                    console.info("Recieved ACK, Sequence: " + tcpPacket.sequence);
+                    this.sender.receivedACK(tcpPacket.sequence);
                 }
             } catch (IOException ex) {
-                System.out.println("Socket fail at receive");
+                console.warning("Socket fail at receive");
             }
         }
-
+        // close connection
         this.socket.close();
     }
 
-    private void sendACK(int sequenceNumber, InetAddress hostname, int destPort) {
+    /**
+     * Send ACK to specific destination::port
+     *
+     * @param sequenceNumber of ACKed packet
+     * @param hostname ip address of server
+     * @param port of server
+     */
+    private void sendACK(int sequenceNumber, InetAddress hostname, int port) {
         try {
-            // generate ack TCPPackage 
-            TCPPacket packet = new TCPPacket();
-            packet.acknowledgementBit = 1;
-            packet.sequenceNumber = sequenceNumber;
-            // Send packet
-            byte[] data = packet.getHeader().getBytes();
-            DatagramPacket pack = new DatagramPacket(data, data.length, hostname, destPort);
+            // generate Ack TCPPackage and send it
+            byte[] data = TCPPacket.ACKPacket(sequenceNumber).getHeader().getBytes();
+            DatagramPacket pack = new DatagramPacket(data, data.length, hostname, port);
             socket.send(pack);
-            System.out.println("Sending ACK, sequence: " + sequenceNumber);
+            console.info("Sending ACK, sequence: " + sequenceNumber);
         } catch (IOException ex) {
-            System.out.println("ERROR while sending ACK, sequence: " + sequenceNumber);
+            console.error("ERROR while sending ACK, sequence: " + sequenceNumber);
         }
     }
 
     /**
-     * Transform outputData into packages, and are sent to destination. Send UDP
-     * datagrams with checksum, sequence and each word as data
+     * Trigger from APP to send command to server
      *
-     * @param message to be sent
+     * @param command to be sent
      */
-    public void sendMessage(String message) {
-        String[] array = message.split("");
+    public void sendMessage(String command) {
         // split message into small packages, and add them to list
+        String[] array = command.split("");
         for (int i = 0; i < array.length; i++) {
-            if (!this.sender.addPackage(new TCPPacket(i, (i < array.length - 1) ? 1 : 0, array[i].equals(" ") ? "_" : array[i]))) {
-                // packet was not added
-                console.warning("Packet could not be added");
+            if (!this.sender.addPackage(new TCPPacket(
+                    i, // sequense number
+                    (i < array.length - 1) ? 1 : 0, // fragment flag
+                    array[i].equals(" ") ? "_" : array[i] // packet data
+            ))) {
+                // Packet could not be added
+                console.warning("Packet # " + i + " could not be added to sender manager");
             }
         }
-        //try {
-        this.sender.sendPackages(this.socket, this.serverAddess, this.serverPort, this.console);
-        //} catch (IOException e) {
-        //    console.error("An error ocurred while sending messages");
-        //}
+        this.sender.sendPackages(this.socket, this.address, this.port, this.console);
     }
 
     /**
-     * TODO: add timeout
+     * Three way hand shake to connect to client
      *
-     * @throws java.lang.Exception if socket error
+     * @throws java.lang.Exception if socket fails
      */
     public void handshake() throws Exception {
-        byte[] receiveData = new byte[1024];
+        // TODO: add timeout
         // create new synchronization packet and send it to server
-        TCPPacket sendData = new TCPPacket();
-        sendData.synchronizationBit = 1;
-        byte[] data = sendData.getHeader().getBytes();
-        DatagramPacket packetOUT = new DatagramPacket(data, data.length, this.serverAddess, this.serverPort);
-        this.socket.send(packetOUT);
+        byte[] buffer = new byte[1024];
+        byte[] data = TCPPacket.SYNCPacket().getHeader().getBytes();
+        this.socket.send(new DatagramPacket(data, data.length, this.address, this.port));
         // wait for a synchronization ACK packet from server
-        DatagramPacket packetIN = new DatagramPacket(receiveData, receiveData.length);
+        DatagramPacket packetIN = new DatagramPacket(buffer, buffer.length);
         this.socket.receive(packetIN);
-        TCPPacket receivedData = new TCPPacket(new String(packetIN.getData()));
+        TCPPacket packet = new TCPPacket(new String(packetIN.getData()));
         // validate if it's a synchronization ACK packet
-        if (receivedData.acknowledgementBit == 1 && receivedData.synchronizationBit == 1) {
+        if (packet.acknowledgementFlag == 1 && packet.synchronizationFlag == 1) {
             // send confirmation to server
-            sendData = new TCPPacket();
-            sendData.synchronizationBit = 1;
-            sendData.acknowledgementBit = 1;
-            data = sendData.getHeader().getBytes();
-            packetOUT = new DatagramPacket(data, data.length, this.serverAddess, this.serverPort);
-            this.socket.send(packetOUT);
-            this.console.info("Client connected, Server IP: " + this.serverAddess.getHostAddress() + ", Server Port: " + this.serverPort);
+            data = TCPPacket.SYNCACKPacket().getHeader().getBytes();
+            this.socket.send(new DatagramPacket(data, data.length, this.address, this.port));
+            this.console.info("Connected to server, IP: " + this.address.getHostAddress() + ", Port: " + this.port);
             this.connected = true;
         }
         // TODO: add when not connected
     }
 
     /**
-     * TODO: add timeout ----------------------------------------------------
-     * End connection with Server
+     * Start events to disconnect from server, end demo
      *
-     * @throws java.io.IOException if socket error
+     * @throws java.io.IOException if socket fails
      */
     public void disconnect() throws IOException {
+        // TODO: add timeout
         // send an disconnect package server
-        byte[] receiveData = new byte[1024];
-        TCPPacket sendData = new TCPPacket();
-        sendData.finishBit = 1;
-        byte[] data = sendData.getHeader().getBytes();
-        DatagramPacket sendPacket = new DatagramPacket(data, data.length, this.serverAddess, this.serverPort);
-        this.socket.send(sendPacket);
+        byte[] buffer = new byte[1024];
+        byte[] data = TCPPacket.FINPacket().getHeader().getBytes();
+        this.socket.send(new DatagramPacket(data, data.length, this.address, this.port));
         // wait for an finish ACK from server
-        DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
+        DatagramPacket receivePacket = new DatagramPacket(buffer, buffer.length);
         this.socket.receive(receivePacket);
-        TCPPacket receivedData = new TCPPacket(new String(receivePacket.getData()));
+        TCPPacket packet = new TCPPacket(new String(receivePacket.getData()));
         // validate if it's a finish ACK
-        if (receivedData.finishBit == 1 && receivedData.acknowledgementBit == 1) {
-            // confirmation from client, close this connection
+        if (packet.finishFlag == 1 && packet.acknowledgementFlag == 1) {
+            // confirmation from server, close this connection
             this.connected = false;
             this.socket.close();
         }
-        // TODO: add when other packet
+        // TODO: add when other packet or not receive sync ack
     }
 
     /**
      * @return state of connection
      */
     public boolean isConnected() {
-        return connected;
+        return this.connected;
     }
 
 }

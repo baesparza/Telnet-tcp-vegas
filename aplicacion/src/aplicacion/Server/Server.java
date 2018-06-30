@@ -66,7 +66,7 @@ public final class Server implements Runnable {
                 if (packet.checksum != 0) {
                     // packet has data
                     if (this.receiver.add(packet)) {
-                        this.sendACK(packet.sequenceNumber, packetIN.getAddress(), packetIN.getPort());
+                        this.sendACK(packet.sequence, packetIN.getAddress(), packetIN.getPort());
                         // veryfy if all packages have been receibed
                         if (this.receiver.hasEnded()) {
                             // pass data to application
@@ -77,7 +77,7 @@ public final class Server implements Runnable {
                     } else {
                         System.out.println("Invalid package have been deleted");
                     }
-                } else if (packet.finishBit == 1) {
+                } else if (packet.finishFlag == 1) {
                     // client wants to disconnect
                     this.disconnect(packetIN.getAddress(), packetIN.getPort());
                     System.exit(0);
@@ -92,8 +92,8 @@ public final class Server implements Runnable {
         try {
             // generate ack TCPPackage 
             TCPPacket packet = new TCPPacket();
-            packet.acknowledgementBit = 1;
-            packet.sequenceNumber = sequenceNumber;
+            packet.acknowledgementFlag = 1;
+            packet.sequence = sequenceNumber;
             // Send packet
             byte[] data = packet.getHeader().getBytes();
             DatagramPacket pack = new DatagramPacket(data, data.length, hostname, destPort);
@@ -143,12 +143,12 @@ public final class Server implements Runnable {
         int clientPort = packetIN.getPort();
         TCPPacket receivePacket = new TCPPacket(new String(packetIN.getData()));
         // check if is a synchronization package
-        if (receivePacket.synchronizationBit == 1) {
+        if (receivePacket.synchronizationFlag == 1) {
             // Send synchronization ACK
             TCPPacket packet = new TCPPacket();
             // TODO: create sync packet and sync ack
-            packet.synchronizationBit = 1;
-            packet.acknowledgementBit = 1;
+            packet.synchronizationFlag = 1;
+            packet.acknowledgementFlag = 1;
             // get bytes of package with empty body
             byte[] data = packet.getHeader().getBytes();
             DatagramPacket packetOUT = new DatagramPacket(data, data.length, clientAddress, clientPort);
@@ -158,7 +158,7 @@ public final class Server implements Runnable {
             this.socket.receive(packetIN);
             packet = new TCPPacket(new String(packetIN.getData()));
             // validate if conection was made
-            if (packet.acknowledgementBit == 1 && packet.synchronizationBit == 1) {
+            if (packet.acknowledgementFlag == 1 && packet.synchronizationFlag == 1) {
                 System.out.println("Client conected, Client IP: " + clientAddress.getHostAddress() + ", Client PORT: " + clientPort);
             }
         }
@@ -176,8 +176,8 @@ public final class Server implements Runnable {
         try {
             // disconnection triggered, send finish ACK
             TCPPacket sendData = new TCPPacket();
-            sendData.finishBit = 1;
-            sendData.acknowledgementBit = 1;
+            sendData.finishFlag = 1;
+            sendData.acknowledgementFlag = 1;
             byte[] data = sendData.getHeader().getBytes();
             DatagramPacket sendPacket = new DatagramPacket(data, data.length, clientAddress, clientPort);
             this.socket.send(sendPacket);

@@ -13,13 +13,13 @@ public class TCPPacket {
     public static final String SEPARATOR = ";";
 
     // TODO: add segment
-    public int synchronizationBit = 0;
-    public int acknowledgementBit = 0;
-    public int finishBit = 0;
+    public int synchronizationFlag = 0;
+    public int acknowledgementFlag = 0;
+    public int finishFlag = 0;
     public int windowSize = 0;
     public long checksum = 0;
-    public int fragementNumber = 0;
-    public int sequenceNumber = 0;
+    public int fragementFlag = 0;
+    public int sequence = 0;
     public String body = "";
 
     private boolean ACKreceived = false;
@@ -40,47 +40,71 @@ public class TCPPacket {
     public TCPPacket(String rawData) {
         String data[] = rawData.split(TCPPacket.SEPARATOR);
 
-        this.synchronizationBit = Integer.parseInt(data[0]);
-        this.acknowledgementBit = Integer.parseInt(data[1]);
-        this.finishBit = Integer.parseInt(data[2]);
+        this.synchronizationFlag = Integer.parseInt(data[0]);
+        this.acknowledgementFlag = Integer.parseInt(data[1]);
+        this.finishFlag = Integer.parseInt(data[2]);
         this.windowSize = Integer.parseInt(data[3]);
         this.checksum = Long.parseLong(data[4]);
-        this.fragementNumber = Integer.parseInt(data[5]);
-        this.sequenceNumber = Integer.parseInt(data[6]);
+        this.fragementFlag = Integer.parseInt(data[5]);
+        this.sequence = Integer.parseInt(data[6]);
 
         if (data.length == 8) {
             this.body = data[7].equals("_") ? " " : data[7];
         }
     }
-// sequense
 
     public TCPPacket(int sequenceNumber, int fragementNumber, String body) {
         this.body = body;
-        this.fragementNumber = fragementNumber;
-        this.sequenceNumber = sequenceNumber;
+        this.fragementFlag = fragementNumber;
+        this.sequence = sequenceNumber;
         this.checksum = TCPPacket.getChecksum(body);
+    }
+
+    public static TCPPacket ACKPacket(int sequenceNumber) {
+        TCPPacket packet = new TCPPacket();
+        packet.acknowledgementFlag = 1;
+        packet.sequence = sequenceNumber;
+        return packet;
+    }
+
+    public static TCPPacket SYNCACKPacket() {
+        TCPPacket packet = new TCPPacket();
+        packet.synchronizationFlag = 1;
+        packet.acknowledgementFlag = 1;
+        return packet;
+    }
+
+    public static TCPPacket SYNCPacket() {
+        TCPPacket packet = new TCPPacket();
+        packet.synchronizationFlag = 1;
+        return packet;
+    }
+    public static TCPPacket FINPacket() {
+        TCPPacket packet = new TCPPacket();
+        packet.finishFlag = 1;
+        return packet;
     }
 
     @Override
     public String toString() {
-        return "Synchronization Bit: " + this.synchronizationBit + '\n'
-                + "Acknowledgement Bit: " + this.acknowledgementBit + '\n'
-                + "Finish Bit: " + this.finishBit + '\n'
+        return "Synchronization Bit: " + this.synchronizationFlag + '\n'
+                + "Acknowledgement Bit: " + this.acknowledgementFlag + '\n'
+                + "Finish Bit: " + this.finishFlag + '\n'
                 + "Window Size: " + this.windowSize + '\n'
                 + "Checksum: " + this.checksum + '\n'
-                + "Fragment Number: " + this.fragementNumber + '\n'
-                + "Sequense Number: " + this.sequenceNumber + '\n'
+                + "Fragment Number: " + this.fragementFlag + '\n'
+                + "Sequense Number: " + this.sequence + '\n'
                 + "Body: " + this.body;
     }
 
     public String getHeader() {
-        return this.synchronizationBit + TCPPacket.SEPARATOR
-                + this.acknowledgementBit + TCPPacket.SEPARATOR
-                + this.finishBit + TCPPacket.SEPARATOR
+        return this.synchronizationFlag + TCPPacket.SEPARATOR
+                + this.acknowledgementFlag + TCPPacket.SEPARATOR
+                + this.finishFlag + TCPPacket.SEPARATOR
                 + this.windowSize + TCPPacket.SEPARATOR
                 + this.checksum + TCPPacket.SEPARATOR
-                + this.fragementNumber + TCPPacket.SEPARATOR
-                + this.sequenceNumber + TCPPacket.SEPARATOR
+                + this.fragementFlag + TCPPacket.SEPARATOR
+                + this.sequence + TCPPacket.SEPARATOR
                 + body;
     }
 

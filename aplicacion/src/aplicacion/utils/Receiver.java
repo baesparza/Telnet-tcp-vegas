@@ -30,14 +30,14 @@ public class Receiver {
             return false;
         }
         // package can be added
-        int sequenceNumber = packet.sequenceNumber;
+        int sequenceNumber = packet.sequence;
         // search position backwards, to add higher id's to the end
         for (int i = packages.size() - 1; i >= 0; i--) {
-            if (packages.get(i).sequenceNumber == sequenceNumber) {
+            if (packages.get(i).sequence == sequenceNumber) {
                 // package is already in the list
                 return true;
             }
-            if (packages.get(i).sequenceNumber > sequenceNumber) {
+            if (packages.get(i).sequence > sequenceNumber) {
                 continue;
             }
             // found position
@@ -81,7 +81,7 @@ public class Receiver {
             // no packages
             return false;
         }
-        return 0 == packages.get(packages.size() - 1).fragementNumber;
+        return 0 == packages.get(packages.size() - 1).fragementFlag;
     }
 
     /**

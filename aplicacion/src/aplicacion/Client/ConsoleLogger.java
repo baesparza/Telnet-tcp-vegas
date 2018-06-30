@@ -9,32 +9,62 @@ import javax.swing.JTextArea;
 public class ConsoleLogger {
 
     private int logLevel;
-    public static int LevelError = 0;
-    public static int LevelWarning = 1;
-    public static int LevelInfo = 2;
 
-    private final JTextArea textArea;
+    public static final int LEVEL_ERROR = 0; // Flag for logging error messages
+    public static final int LEVEL_WARNING = 1; // Flag for logging warning and error messages
+    public static final int LEVEL_INFO = 2; // Flag for logging all kind of messages
 
+    private final JTextArea textArea; // text area for logging messages
+
+    /**
+     * Set's log level
+     *
+     * @param logLevel kind of log level
+     */
+    public void setLevel(final int logLevel) {
+        this.logLevel = logLevel;
+    }
+
+    /**
+     * INIT component, by default log level is info
+     *
+     * @param textArea output
+     */
     public ConsoleLogger(JTextArea textArea) {
-        this.logLevel = ConsoleLogger.LevelInfo;
+        this.logLevel = ConsoleLogger.LEVEL_INFO;
         this.textArea = textArea;
     }
 
-    public void error(String message) {
-        if (this.logLevel >= ConsoleLogger.LevelError) {
-            this.textArea.append("[ERROR]: " + message + "\n");
+    /**
+     * Log info messages
+     *
+     * @param message
+     */
+    public void info(String message) {
+        if (this.logLevel >= ConsoleLogger.LEVEL_INFO) {
+            this.textArea.append("[INFO]: " + message + "\n");
         }
     }
 
+    /**
+     * Log error messages
+     *
+     * @param message
+     */
     public void warning(String message) {
-        if (this.logLevel >= ConsoleLogger.LevelWarning) {
+        if (this.logLevel >= ConsoleLogger.LEVEL_WARNING) {
             this.textArea.append("[WARNING]: " + message + "\n");
         }
     }
 
-    public void info(String message) {
-        if (this.logLevel >= ConsoleLogger.LevelInfo) {
-            this.textArea.append("[INFO]: " + message + "\n");
+    /**
+     * Log warning messages
+     *
+     * @param message
+     */
+    public void error(String message) {
+        if (this.logLevel >= ConsoleLogger.LEVEL_ERROR) {
+            this.textArea.append("[ERROR]: " + message + "\n");
         }
     }
 

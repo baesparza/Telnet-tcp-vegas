@@ -15,10 +15,9 @@ import java.net.InetAddress;
  */
 public class ClientGui extends javax.swing.JFrame {
 
-    private Client client;
-    private ConsoleLogger console;
-
-    private boolean connected;
+    private Client client;  // Client transport layer
+    private final ConsoleLogger console; // app console
+    private boolean connected; // state of client
 
     /**
      * Creates new form ClientGui
@@ -365,6 +364,11 @@ public class ClientGui extends javax.swing.JFrame {
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
+    /**
+     * Start connection with server
+     *
+     * @param evt event
+     */
     private void btnConnectActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnConnectActionPerformed
         try {
             // Create a new client, even when no param were provided
@@ -385,6 +389,11 @@ public class ClientGui extends javax.swing.JFrame {
         }
     }//GEN-LAST:event_btnConnectActionPerformed
 
+    /**
+     * Send command to telnet server
+     *
+     * @param evt
+     */
     private void btnSendActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSendActionPerformed
         if (this.connected && !"".equals(this.txtCommand.getText())) {
             this.client.sendMessage(this.txtCommand.getText());
@@ -397,10 +406,14 @@ public class ClientGui extends javax.swing.JFrame {
         }
     }//GEN-LAST:event_btnSendActionPerformed
 
+    /**
+     * Start disconnection with server, end demo
+     *
+     * @param evt
+     */
     private void btnDisconnectActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnDisconnectActionPerformed
         try {
             this.client.disconnect();
-
         } catch (IOException ex) {
             this.connected = this.client.isConnected();
             if (this.connected) {
@@ -450,10 +463,8 @@ public class ClientGui extends javax.swing.JFrame {
         //</editor-fold>
 
         /* Create and display the form */
-        java.awt.EventQueue.invokeLater(new Runnable() {
-            public void run() {
-                new ClientGui().setVisible(true);
-            }
+        java.awt.EventQueue.invokeLater(() -> {
+            new ClientGui().setVisible(true);
         });
     }
 

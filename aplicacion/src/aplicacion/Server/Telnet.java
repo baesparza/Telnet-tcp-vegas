@@ -7,15 +7,15 @@ package aplicacion.Server;
 public class Telnet {
 
     public static String getCommand(final String c) {
-        switch (c) {
-            case "date":
-                return "fecha";
-            case "time":
-                return "Esta fecha";
-            case "example":
-                return "alicia txt";
-            default:
-                return "El comando no existe";
+        if ("date".equals(c)) {
+            return "fecha";
         }
+        if ("time".equals(c)) {
+            return "Esta fecha";
+        }
+        if ("example".equals(c)) {
+            return "alicia txt";
+        }
+        return "El comando no existe";
     }
 }

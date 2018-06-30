@@ -58,15 +58,15 @@ public class Sender {
             try {
                 this.packageSender(pck, output, hostname, port);
                 if (cLog != null) {
-                    cLog.info("Send pack sequence: " + pck.sequenceNumber);
+                    cLog.info("Send pack sequence: " + pck.sequence);
                 } else {
-                    System.out.println("Send pack sequence: " + pck.sequenceNumber);
+                    System.out.println("Send pack sequence: " + pck.sequence);
                 }
             } catch (IOException ex) {
                 if (cLog != null) {
-                    cLog.error("Package with sequence: " + pck.sequenceNumber + " not sended");
+                    cLog.error("Package with sequence: " + pck.sequence + " not sended");
                 } else {
-                    System.out.println("Package with sequence: " + pck.sequenceNumber + " not sended");
+                    System.out.println("Package with sequence: " + pck.sequence + " not sended");
                 }
             }
         }
@@ -84,9 +84,9 @@ public class Sender {
                 // package hasnt been send yet
                 try {
                     this.packageSender(pck, output, hostname, port);
-                    cLog.info("Send pack sequence: " + pck.sequenceNumber);
+                    cLog.info("Send pack sequence: " + pck.sequence);
                 } catch (IOException ex) {
-                    cLog.error("Package with sequence: " + pck.sequenceNumber + " not sended");
+                    cLog.error("Package with sequence: " + pck.sequence + " not sended");
                 }
             }
             // verify ack to move window, or verify timeot of packages in range
@@ -106,9 +106,9 @@ public class Sender {
                 if (pck.timeOut()) {
                     try {
                         this.packageSender(pck, output, hostname, port);
-                        cLog.warning("Timeout, resending pack sequence: " + pck.sequenceNumber);
+                        cLog.warning("Timeout, resending pack sequence: " + pck.sequence);
                     } catch (IOException ex) {
-                        cLog.error("while resending package with sequence: " + pck.sequenceNumber);
+                        cLog.error("while resending package with sequence: " + pck.sequence);
                     }
                 }
             }
