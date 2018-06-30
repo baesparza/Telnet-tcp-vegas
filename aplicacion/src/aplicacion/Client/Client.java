@@ -1,5 +1,6 @@
 package aplicacion.Client;
 
+import aplicacion.utils.Receiver;
 import aplicacion.utils.Sender;
 import aplicacion.utils.TCPPacket;
 import java.io.IOException;
@@ -21,6 +22,7 @@ public class Client implements Runnable {
     private Thread thread;
 
     private final Sender sender;
+    private Receiver receiver;
     private final JTextArea textArea;
     private final ConsoleLogger console;
     private boolean connected;
@@ -45,6 +47,7 @@ public class Client implements Runnable {
         // init socket and other fields
         this.socket = new DatagramSocket();
         this.sender = new Sender();
+        this.receiver = new Receiver();
         this.connected = false;
         // connect client to server
         this.handshake();
@@ -72,7 +75,17 @@ public class Client implements Runnable {
                 // get type of packet
                 if (packet.checksum != 0) {
                     // packet has data
-
+                    if (this.receiver.add(packet)) {
+                        this.sendACK(packet.sequenceNumber, packetIN.getAddress(), packetIN.getPort());
+                        // veryfy if all packages have been receibed
+                        if (this.receiver.hasEnded()) {
+                            // pass data to application
+                            this.textArea.append(this.receiver.getMessage());
+                            this.receiver.clear();
+                        }
+                    } else {
+                        System.out.println("Invalid package have been deleted");
+                    }
                 } else if (packet.acknowledgementBit == 1) {
                     // it's an ACK
                     // tell package ack has arrived
@@ -85,6 +98,22 @@ public class Client implements Runnable {
         }
 
         this.socket.close();
+    }
+
+    private void sendACK(int sequenceNumber, InetAddress hostname, int destPort) {
+        try {
+            // generate ack TCPPackage 
+            TCPPacket packet = new TCPPacket();
+            packet.acknowledgementBit = 1;
+            packet.sequenceNumber = sequenceNumber;
+            // Send packet
+            byte[] data = packet.getHeader().getBytes();
+            DatagramPacket pack = new DatagramPacket(data, data.length, hostname, destPort);
+            socket.send(pack);
+            System.out.println("Sending ACK, sequence: " + sequenceNumber);
+        } catch (IOException ex) {
+            System.out.println("ERROR while sending ACK, sequence: " + sequenceNumber);
+        }
     }
 
     /**

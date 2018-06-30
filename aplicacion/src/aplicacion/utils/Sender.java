@@ -57,9 +57,17 @@ public class Sender {
             TCPPacket pck = this.packets.get(i);
             try {
                 this.packageSender(pck, output, hostname, port);
-                cLog.info("Send pack sequence: " + pck.sequenceNumber);
+                if (cLog != null) {
+                    cLog.info("Send pack sequence: " + pck.sequenceNumber);
+                } else {
+                    System.out.println("Send pack sequence: " + pck.sequenceNumber);
+                }
             } catch (IOException ex) {
-                cLog.error("Package with sequence: " + pck.sequenceNumber + " not sended");
+                if (cLog != null) {
+                    cLog.error("Package with sequence: " + pck.sequenceNumber + " not sended");
+                } else {
+                    System.out.println("Package with sequence: " + pck.sequenceNumber + " not sended");
+                }
             }
         }
         /*

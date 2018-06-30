@@ -70,6 +70,7 @@ public final class Server implements Runnable {
                         // veryfy if all packages have been receibed
                         if (this.receiver.hasEnded()) {
                             // pass data to application
+                            System.out.println(this.receiver.getMessage());
                             sendMessage(this.receiver.getMessage(), packetIN.getAddress(), packetIN.getPort());
                             this.receiver.clear();
                         }
@@ -107,10 +108,12 @@ public final class Server implements Runnable {
      * Transform outputData into packages, and are sent to destination. Send UDP
      * datagrams with checksum, sequence and each word as data
      *
-     * @param message to be sent
+     * @param command to be sent
      */
-    public void sendMessage(String message, InetAddress serverAddess, int serverPort) {
-        String[] array = message.split("");
+    public void sendMessage(String command, InetAddress clientAddress, int clientPort) {
+        // pass command to telnet app
+        String response = Telnet.getCommand(command);
+        String[] array = response.split("");
         // split message into small packages, and add them to list
         for (int i = 0; i < array.length; i++) {
             if (!this.sender.addPackage(new TCPPacket(i, (i < array.length - 1) ? 1 : 0, array[i].equals(" ") ? "_" : array[i]))) {
@@ -119,7 +122,8 @@ public final class Server implements Runnable {
             }
         }
         //try {
-        this.sender.sendPackages(this.socket, serverAddess, serverPort, null);
+        this.sender.sendPackages(this.socket, clientAddress, clientPort, null
+        );
         //} catch (IOException e) {
         //    console.error("An error ocurred while sending messages");
         //}

@@ -64,7 +64,7 @@ public class Receiver {
     public String getMessage() {
         StringBuilder resp = new StringBuilder();
         for (TCPPacket p : packages) {
-            resp.append(p.body);
+            resp.append(p.body.equals("_") ? " " : p.body);
         }
         return resp.toString();
     }
