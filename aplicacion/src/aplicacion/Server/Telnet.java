@@ -7,6 +7,7 @@ package aplicacion.Server;
 public class Telnet {
 
     public static String getCommand(final String c) {
+        System.out.println(c);
         if ("date".equals(c)) {
             return "fecha";
         }

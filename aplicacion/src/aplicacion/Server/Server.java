@@ -57,27 +57,31 @@ public final class Server implements Runnable {
     @Override
     public void run() {
         while (true) {
-            byte[] receiveData = new byte[1024];
+            byte[] buffer = new byte[1024];
             try {
-                DatagramPacket packetIN = new DatagramPacket(receiveData, receiveData.length);
+                DatagramPacket packetIN = new DatagramPacket(buffer, buffer.length);
                 this.socket.receive(packetIN);
-                TCPPacket packet = new TCPPacket(new String(packetIN.getData()));
-                // get type of packet
-                if (packet.checksum != 0) {
-                    // packet has data
-                    if (this.receiver.add(packet)) {
-                        this.sendACK(packet.sequence, packetIN.getAddress(), packetIN.getPort());
+                TCPPacket tcpPacket = new TCPPacket(new String(packetIN.getData()));
+                // act depending on packet type
+                if (tcpPacket.checksum != 0) {
+                    // packet has data, verify content, send ack if valid
+                    if (this.receiver.add(tcpPacket)) {
+                        this.sendACK(tcpPacket.sequence, packetIN.getAddress(), packetIN.getPort());
                         // veryfy if all packages have been receibed
                         if (this.receiver.hasEnded()) {
-                            // pass data to application
+                            // send a telnet response
                             System.out.println(this.receiver.getMessage());
-                            sendMessage(this.receiver.getMessage(), packetIN.getAddress(), packetIN.getPort());
+                            sendResponse(this.receiver.getMessage(), packetIN.getAddress(), packetIN.getPort());
                             this.receiver.clear();
                         }
                     } else {
                         System.out.println("Invalid package have been deleted");
                     }
-                } else if (packet.finishFlag == 1) {
+                } else if (tcpPacket.acknowledgementFlag == 1) {
+                    // packet is an ACK, tell out manager and ACK arrived
+                    System.out.println("Recieved ACK, Sequence: " + tcpPacket.sequence);
+                    this.sender.receivedACK(tcpPacket.sequence);
+                } else if (tcpPacket.finishFlag == 1) {
                     // client wants to disconnect
                     this.disconnect(packetIN.getAddress(), packetIN.getPort());
                     System.exit(0);
@@ -88,15 +92,18 @@ public final class Server implements Runnable {
         }
     }
 
-    private void sendACK(int sequenceNumber, InetAddress hostname, int destPort) {
+    /**
+     * Send ACK to specific destination::port
+     *
+     * @param sequenceNumber of ACKed packet
+     * @param hostname ip address of server
+     * @param port of server
+     */
+    private void sendACK(int sequenceNumber, InetAddress hostname, int port) {
         try {
-            // generate ack TCPPackage 
-            TCPPacket packet = new TCPPacket();
-            packet.acknowledgementFlag = 1;
-            packet.sequence = sequenceNumber;
-            // Send packet
-            byte[] data = packet.getHeader().getBytes();
-            DatagramPacket pack = new DatagramPacket(data, data.length, hostname, destPort);
+            // generate ack TCPPackage and send packet
+            byte[] data = TCPPacket.ACKPacket(sequenceNumber).getHeader().getBytes();
+            DatagramPacket pack = new DatagramPacket(data, data.length, hostname, port);
             socket.send(pack);
             System.out.println("Sending ACK, sequence: " + sequenceNumber);
         } catch (IOException ex) {
@@ -105,15 +112,15 @@ public final class Server implements Runnable {
     }
 
     /**
-     * Transform outputData into packages, and are sent to destination. Send UDP
-     * datagrams with checksum, sequence and each word as data
+     * Takes a command and return a telnet response
      *
      * @param command to be sent
+     * @param address of client
+     * @param port of client
      */
-    public void sendMessage(String command, InetAddress clientAddress, int clientPort) {
+    public void sendResponse(String command, InetAddress address, int port) {
         // pass command to telnet app
-        String response = Telnet.getCommand(command);
-        String[] array = response.split("");
+        String[] array = Telnet.getCommand(command).split("");
         // split message into small packages, and add them to list
         for (int i = 0; i < array.length; i++) {
             if (!this.sender.addPackage(new TCPPacket(i, (i < array.length - 1) ? 1 : 0, array[i].equals(" ") ? "_" : array[i]))) {
@@ -121,66 +128,50 @@ public final class Server implements Runnable {
                 System.out.println("Packet could not be added");
             }
         }
-        //try {
-        this.sender.sendPackages(this.socket, clientAddress, clientPort, null
-        );
-        //} catch (IOException e) {
-        //    console.error("An error ocurred while sending messages");
-        //}
+        this.sender.sendPackages(this.socket, address, port, null);
     }
 
     /**
-     * Server handshake with a client
+     * Server waits for a client to handshake
      *
      * @throws IOException when socket fails
      */
     public void handShake() throws IOException {
-        byte[] receiveData = new byte[1024];
-        DatagramPacket packetIN = new DatagramPacket(receiveData, receiveData.length);
+        // TODO: add timeout
+        byte[] buffer = new byte[1024];
         // Whait for client to connect
+        DatagramPacket packetIN = new DatagramPacket(buffer, buffer.length);
         this.socket.receive(packetIN);
-        InetAddress clientAddress = packetIN.getAddress();
-        int clientPort = packetIN.getPort();
-        TCPPacket receivePacket = new TCPPacket(new String(packetIN.getData()));
+        TCPPacket tcpPacket = new TCPPacket(new String(packetIN.getData()));
         // check if is a synchronization package
-        if (receivePacket.synchronizationFlag == 1) {
+        if (tcpPacket.synchronizationFlag == 1) {
             // Send synchronization ACK
-            TCPPacket packet = new TCPPacket();
-            // TODO: create sync packet and sync ack
-            packet.synchronizationFlag = 1;
-            packet.acknowledgementFlag = 1;
-            // get bytes of package with empty body
-            byte[] data = packet.getHeader().getBytes();
-            DatagramPacket packetOUT = new DatagramPacket(data, data.length, clientAddress, clientPort);
-            this.socket.send(packetOUT);
+            byte[] data = TCPPacket.SYNCACKPacket().getHeader().getBytes();
+            this.socket.send(new DatagramPacket(data, data.length, packetIN.getAddress(), packetIN.getPort()));
             // wait for a confirmation from the client
-            packetIN = new DatagramPacket(receiveData, receiveData.length);
+            packetIN = new DatagramPacket(buffer, buffer.length);
             this.socket.receive(packetIN);
-            packet = new TCPPacket(new String(packetIN.getData()));
+            tcpPacket = new TCPPacket(new String(packetIN.getData()));
             // validate if conection was made
-            if (packet.acknowledgementFlag == 1 && packet.synchronizationFlag == 1) {
-                System.out.println("Client conected, Client IP: " + clientAddress.getHostAddress() + ", Client PORT: " + clientPort);
+            if (tcpPacket.acknowledgementFlag == 1 && tcpPacket.synchronizationFlag == 1) {
+                System.out.println("Conected, IP: " + packetIN.getAddress().getHostAddress() + ", PORT: " + packetIN.getPort());
             }
         }
         // TODO: add when package fails
     }
 
     /**
-     * TODO: add timer when trigger started-----------------------------------
      * Disconnect and free socket
      *
-     * @param clientAddress of client
-     * @param clientPort of client
+     * @param address of client
+     * @param port of client
      */
-    public void disconnect(InetAddress clientAddress, int clientPort) {
+    public void disconnect(InetAddress address, int port) {
+        // TODO: add timeout
         try {
-            // disconnection triggered, send finish ACK
-            TCPPacket sendData = new TCPPacket();
-            sendData.finishFlag = 1;
-            sendData.acknowledgementFlag = 1;
-            byte[] data = sendData.getHeader().getBytes();
-            DatagramPacket sendPacket = new DatagramPacket(data, data.length, clientAddress, clientPort);
-            this.socket.send(sendPacket);
+            // send confirmation to client get disconnected
+            byte[] data = TCPPacket.FINACKPacket().getHeader().getBytes();
+            this.socket.send(new DatagramPacket(data, data.length, address, port));
             this.socket.close();
             System.out.println("Client disconnected");
         } catch (IOException ex) {

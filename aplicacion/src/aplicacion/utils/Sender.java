@@ -58,9 +58,9 @@ public class Sender {
             try {
                 this.packageSender(pck, output, hostname, port);
                 if (cLog != null) {
-                    cLog.info("Send pack sequence: " + pck.sequence);
+                    cLog.info("Sent pack sequence: " + pck.sequence);
                 } else {
-                    System.out.println("Send pack sequence: " + pck.sequence);
+                    System.out.println("Sent pack sequence: " + pck.sequence);
                 }
             } catch (IOException ex) {
                 if (cLog != null) {

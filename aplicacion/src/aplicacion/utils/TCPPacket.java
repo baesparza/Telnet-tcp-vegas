@@ -66,6 +66,13 @@ public class TCPPacket {
         packet.sequence = sequenceNumber;
         return packet;
     }
+    
+    public static TCPPacket FINACKPacket() {
+        TCPPacket packet = new TCPPacket();
+        packet.acknowledgementFlag = 1;
+        packet.finishFlag = 1;
+        return packet;
+    }
 
     public static TCPPacket SYNCACKPacket() {
         TCPPacket packet = new TCPPacket();
