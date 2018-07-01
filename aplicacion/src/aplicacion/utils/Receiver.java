@@ -70,7 +70,6 @@ public class Receiver {
     }
 
     /**
-     * TODO: validate with id if all packages have been received ...............
      * Verify if all packages have been received by checking last package
      * received
      *
@@ -81,21 +80,14 @@ public class Receiver {
             // no packages
             return false;
         }
-        return 0 == packages.get(packages.size() - 1).fragementFlag;
-    }
-
-    /**
-     * TODO: return last segment package ......................................
-     * Get last from a segment package from the array
-     *
-     * @return
-     */
-    public TCPPacket getLastPackage() {
-        if (packages.isEmpty()) {
-            // no packages
-            return null;
+        // validate if all packages have been received, by chacking sequense
+        for (int i = 1; i < this.packages.size(); i++) {
+            if (this.packages.get(i - 1).sequence + 1 != this.packages.get(i).sequence) {
+                return false;
+            }
         }
-        return packages.get(packages.size() - 1);
+        // validate fragment flag
+        return 0 == packages.get(packages.size() - 1).fragementFlag;
     }
 
 }

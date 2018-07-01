@@ -20,7 +20,7 @@ public class Sender {
     private int min, max;
 
     /**
-     * TODO: manipulate windows size, Control packages, and resend as needed
+     * Manager for sending packets
      */
     public Sender() {
         this.window_size = 1;
@@ -53,24 +53,6 @@ public class Sender {
      * @param cLog log error messages
      */
     public void sendPackages(DatagramSocket output, InetAddress hostname, int port, ConsoleLogger cLog) {
-        for (int i = 0; i < this.packets.size(); i++) {
-            TCPPacket pck = this.packets.get(i);
-            try {
-                this.packageSender(pck, output, hostname, port);
-                if (cLog != null) {
-                    cLog.info("Sent pack sequence: " + pck.sequence);
-                } else {
-                    System.out.println("Sent pack sequence: " + pck.sequence);
-                }
-            } catch (IOException ex) {
-                if (cLog != null) {
-                    cLog.error("Package with sequence: " + pck.sequence + " not sended");
-                } else {
-                    System.out.println("Package with sequence: " + pck.sequence + " not sended");
-                }
-            }
-        }
-        /*
         while (this.min < this.packets.size()) {
             // lock imput packages 
             this.canReceive = false;
@@ -84,9 +66,17 @@ public class Sender {
                 // package hasnt been send yet
                 try {
                     this.packageSender(pck, output, hostname, port);
-                    cLog.info("Send pack sequence: " + pck.sequence);
+                    if (cLog != null) {
+                        cLog.info("Send pack sequence: " + pck.sequence);
+                    } else {
+                        System.out.println("Send pack sequence: " + pck.sequence);
+                    }
                 } catch (IOException ex) {
-                    cLog.error("Package with sequence: " + pck.sequence + " not sended");
+                    if (cLog != null) {
+                        cLog.info("Package with sequence: " + pck.sequence + " not sended");
+                    } else {
+                        System.out.println("Package with sequence: " + pck.sequence + " not sended");
+                    }
                 }
             }
             // verify ack to move window, or verify timeot of packages in range
@@ -106,9 +96,17 @@ public class Sender {
                 if (pck.timeOut()) {
                     try {
                         this.packageSender(pck, output, hostname, port);
-                        cLog.warning("Timeout, resending pack sequence: " + pck.sequence);
+                        if (cLog != null) {
+                            cLog.warning("Timeout, resending pack sequence: " + pck.sequence);
+                        } else {
+                            System.out.println("Timeout, resending pack sequence: " + pck.sequence);
+                        }
                     } catch (IOException ex) {
-                        cLog.error("while resending package with sequence: " + pck.sequence);
+                        if (cLog != null) {
+                            cLog.warning("while resending package with sequence: " + pck.sequence);
+                        } else {
+                            System.out.println("while resending package with sequence: " + pck.sequence);
+                        }
                     }
                 }
             }
@@ -118,7 +116,6 @@ public class Sender {
         this.canReceive = true;
         this.min = 0;
         this.max = this.window_size = 1;
-         */
     }
 
     /**
