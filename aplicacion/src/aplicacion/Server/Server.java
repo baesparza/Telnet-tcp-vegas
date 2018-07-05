@@ -1,5 +1,6 @@
 package aplicacion.Server;
 
+import aplicacion.utils.ConsoleLogger;
 import aplicacion.utils.Receiver;
 import aplicacion.utils.Sender;
 import aplicacion.utils.TCPPacket;
@@ -7,7 +8,6 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
-import java.net.SocketException;
 
 /**
  *
@@ -20,27 +20,24 @@ public final class Server implements Runnable {
      */
     public static final int PORT = 5000;
 
-    private DatagramSocket socket;
+    private final DatagramSocket socket;
     private Thread thread;
-    private Receiver receiver;
+    private final Receiver receiver;
     private final Sender sender;
+    private final ConsoleLogger cLog;
 
     /**
      * Initialize server and start listening for a handShake
+     *
+     * @param cLog to print messages
+     * @throws java.io.IOException when socket doesn't start
      */
-    public Server() {
+    public Server(ConsoleLogger cLog) throws IOException {
+        this.cLog = cLog;
         this.receiver = new Receiver();
         this.sender = new Sender();
-        try {
-            this.socket = new DatagramSocket(Server.PORT);
-            this.handShake();
-        } catch (SocketException ex) {
-            System.out.println("Can't initialize socket");
-            System.exit(1);
-        } catch (IOException ex) {
-            System.out.println("Can't initailize handshake");
-            System.exit(1);
-        }
+        this.socket = new DatagramSocket(Server.PORT);
+        this.handShake();
     }
 
     /**
@@ -63,6 +60,7 @@ public final class Server implements Runnable {
                 this.socket.receive(packetIN);
                 TCPPacket tcpPacket = new TCPPacket(new String(packetIN.getData()));
                 // act depending on packet type
+                System.out.println(tcpPacket.acknowledgementFlag == 1);
                 if (tcpPacket.checksum != 0) {
                     // packet has data, verify content, send ack if valid
                     if (this.receiver.add(tcpPacket)) {
@@ -70,16 +68,16 @@ public final class Server implements Runnable {
                         // veryfy if all packages have been receibed
                         if (this.receiver.hasEnded()) {
                             // send a telnet response
-                            System.out.println(this.receiver.getMessage());
+                            cLog.info("Received command: " + this.receiver.getMessage());
                             sendResponse(this.receiver.getMessage(), packetIN.getAddress(), packetIN.getPort());
                             this.receiver.clear();
                         }
                     } else {
-                        System.out.println("Invalid package have been deleted");
+                        cLog.warning("Invalid package have been deleted, seq: " + tcpPacket.sequence);
                     }
                 } else if (tcpPacket.acknowledgementFlag == 1) {
                     // packet is an ACK, tell out manager and ACK arrived
-                    System.out.println("Recieved ACK, Sequence: " + tcpPacket.sequence);
+                    cLog.info("Recieved ACK, Sequence: " + tcpPacket.sequence);
                     this.sender.receivedACK(tcpPacket.sequence);
                 } else if (tcpPacket.finishFlag == 1) {
                     // client wants to disconnect
@@ -87,7 +85,7 @@ public final class Server implements Runnable {
                     System.exit(0);
                 }
             } catch (IOException ex) {
-                System.out.println("Socket fail at receive");
+                cLog.error("Socket fail at receive");
             }
         }
     }
@@ -105,9 +103,9 @@ public final class Server implements Runnable {
             byte[] data = TCPPacket.ACKPacket(sequenceNumber).getHeader().getBytes();
             DatagramPacket pack = new DatagramPacket(data, data.length, hostname, port);
             socket.send(pack);
-            System.out.println("Sending ACK, sequence: " + sequenceNumber);
+            cLog.info("Sending ACK, sequence: " + sequenceNumber);
         } catch (IOException ex) {
-            System.out.println("ERROR while sending ACK, sequence: " + sequenceNumber);
+            cLog.error("ERROR while sending ACK, sequence: " + sequenceNumber);
         }
     }
 
@@ -119,13 +117,21 @@ public final class Server implements Runnable {
      * @param port of client
      */
     public void sendResponse(String command, InetAddress address, int port) {
-        // pass command to telnet app
-        String[] array = Telnet.getCommand(command).split("");
+        new Thread() {
+            @Override
+            public void run() {
+                System.out.println("name: " + getName() + ", id:" + getId() + ", state:" + getState());
+            }
+        }.start();
+        // get telnet response
+        String resp = Telnet.getCommand(command);
+        cLog.info(resp);
+        String[] array = resp.split("");
         // split message into small packages, and add them to list
         for (int i = 0; i < array.length; i++) {
             if (!this.sender.addPackage(new TCPPacket(i, (i < array.length - 1) ? 1 : 0, array[i].equals(" ") ? "_" : array[i]))) {
                 // packet was not added
-                System.out.println("Packet could not be added");
+                cLog.error("Response packet could not be added to sender");
             }
         }
         this.sender.sendPackages(this.socket, address, port, null);
@@ -154,7 +160,7 @@ public final class Server implements Runnable {
             tcpPacket = new TCPPacket(new String(packetIN.getData()));
             // validate if conection was made
             if (tcpPacket.acknowledgementFlag == 1 && tcpPacket.synchronizationFlag == 1) {
-                System.out.println("Conected, IP: " + packetIN.getAddress().getHostAddress() + ", PORT: " + packetIN.getPort());
+                cLog.info("Conected, IP: " + packetIN.getAddress().getHostAddress() + ", PORT: " + packetIN.getPort());
             }
         }
         // TODO: add when package fails
@@ -173,9 +179,9 @@ public final class Server implements Runnable {
             byte[] data = TCPPacket.FINACKPacket().getHeader().getBytes();
             this.socket.send(new DatagramPacket(data, data.length, address, port));
             this.socket.close();
-            System.out.println("Client disconnected");
+            cLog.info("Client disconnected");
         } catch (IOException ex) {
-            System.out.println("Can't send finish ACK");
+            cLog.error("Can't send finish ACK");
         }
     }
 
