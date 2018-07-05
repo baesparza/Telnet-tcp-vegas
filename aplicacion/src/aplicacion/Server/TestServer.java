@@ -6,10 +6,9 @@ package aplicacion.Server;
  */
 public class TestServer {
 
-    public static void main(String[] args) throws Exception {
-
-        System.out.println("Server running");
-        Server s = new Server();
-        s.start();
+    public static void main(String[] args) {
+        ServerGui gui = new ServerGui();
+        gui.setVisible(true);
+        gui.initCompnents();
     }
 }

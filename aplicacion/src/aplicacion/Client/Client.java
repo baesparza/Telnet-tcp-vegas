@@ -1,5 +1,6 @@
 package aplicacion.Client;
 
+import aplicacion.utils.ConsoleLogger;
 import aplicacion.utils.Receiver;
 import aplicacion.utils.Sender;
 import aplicacion.utils.TCPPacket;
@@ -34,13 +35,13 @@ public final class Client implements Runnable {
      * @param hostname ip address of server
      * @param port of server
      * @param textArea input textArea for write messages
-     * @param txtConsole textArea to write logs
+     * @param console to write logs
      * @throws java.lang.Exception when failed to create client
      */
-    public Client(final InetAddress hostname, final int port, final JTextArea textArea, final JTextArea txtConsole) throws Exception {
+    public Client(final InetAddress hostname, final int port, final JTextArea textArea, ConsoleLogger console) throws Exception {
         this.address = hostname;
         this.port = port;
-        this.console = new ConsoleLogger(txtConsole);
+        this.console = console;
         this.textArea = textArea;
         this.socket = new DatagramSocket();
         this.sender = new Sender();
