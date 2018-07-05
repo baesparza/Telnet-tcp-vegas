@@ -66,7 +66,7 @@ public class TCPPacket {
         packet.sequence = sequenceNumber;
         return packet;
     }
-    
+
     public static TCPPacket FINACKPacket() {
         TCPPacket packet = new TCPPacket();
         packet.acknowledgementFlag = 1;
@@ -86,6 +86,7 @@ public class TCPPacket {
         packet.synchronizationFlag = 1;
         return packet;
     }
+
     public static TCPPacket FINPacket() {
         TCPPacket packet = new TCPPacket();
         packet.finishFlag = 1;
@@ -162,18 +163,14 @@ public class TCPPacket {
         this.startTime = System.currentTimeMillis();
     }
 
-    public boolean timeOut() {
+    public boolean timeOut(final int seconds) {
         // TODO: fix timer
         long time = (new Date()).getTime() - startTime;
-        return time > 2000;
+        return time > seconds * 1000;
     }
 
-    private static Thread timerThread(final int seconds) {
-        return new Thread(() -> {
-            try {
-                Thread.sleep(seconds * 1000);
-            } catch (InterruptedException ie) {
-            }
-        });
+    void ACKreceived() {
+        this.ACKreceived = true;
+        this.ACKwaiting = false;
     }
 }

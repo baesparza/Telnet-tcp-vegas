@@ -20,7 +20,6 @@ public class Telnet {
      * @return response
      */
     public static String getCommand(String c) {
-        System.out.println(c.trim().contains("date"));
         if (c.contains("date")) {
             return Telnet.date();
         }
