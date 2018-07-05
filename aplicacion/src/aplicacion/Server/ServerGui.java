@@ -30,7 +30,6 @@ public class ServerGui extends javax.swing.JFrame {
         try {
             this.server = new Server(this.cLog);
             this.server.start();
-            this.cLog.info("Server on");
         } catch (IOException ex) {
             this.cLog.error("Can't initialize server");
         }

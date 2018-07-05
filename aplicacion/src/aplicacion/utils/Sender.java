@@ -58,9 +58,9 @@ public class Sender {
                 if (packet.timeOut(2)) {
                     try {
                         this.packageSender(packet, output, hostname, port);
-                        System.out.println("Packet sent, seq: " + packet.sequence);
+                        cLog.info("Packet sent, seq: " + packet.sequence);
                     } catch (IOException ex) {
-                        System.out.println("Error: packet not sent, seq: " + packet.sequence);
+                        cLog.warning("Error: packet not sent, seq: " + packet.sequence);
                     }
                 }
             }
@@ -77,7 +77,6 @@ public class Sender {
     private boolean additiveIncrease = false;
 
     public void receivedACK(int sequence) {
-        System.out.println("Received ACKpacket, seq: " + sequence);
         this.packets.get(sequence).ACKreceived();
         boolean canMoveWind = true;
 

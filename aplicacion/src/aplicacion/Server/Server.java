@@ -60,7 +60,6 @@ public final class Server implements Runnable {
                 this.socket.receive(packetIN);
                 TCPPacket tcpPacket = new TCPPacket(new String(packetIN.getData()));
                 // act depending on packet type
-                System.out.println(tcpPacket.acknowledgementFlag == 1);
                 if (tcpPacket.checksum != 0) {
                     // packet has data, verify content, send ack if valid
                     if (this.receiver.add(tcpPacket)) {
@@ -117,24 +116,23 @@ public final class Server implements Runnable {
      * @param port of client
      */
     public void sendResponse(String command, InetAddress address, int port) {
+        // get telnet response
         new Thread() {
             @Override
             public void run() {
-                System.out.println("name: " + getName() + ", id:" + getId() + ", state:" + getState());
+                String resp = Telnet.getCommand(command);
+                cLog.info("Telnet response: " + resp);
+                String[] array = resp.split("");
+                // split message into small packages, and add them to list
+                for (int i = 0; i < array.length; i++) {
+                    if (!sender.addPackage(new TCPPacket(i, (i < array.length - 1) ? 1 : 0, array[i].equals(" ") ? "_" : array[i]))) {
+                        // packet was not added
+                        cLog.error("Response packet could not be added to sender");
+                    }
+                }
+                sender.sendPackages(socket, address, port, cLog);
             }
         }.start();
-        // get telnet response
-        String resp = Telnet.getCommand(command);
-        cLog.info(resp);
-        String[] array = resp.split("");
-        // split message into small packages, and add them to list
-        for (int i = 0; i < array.length; i++) {
-            if (!this.sender.addPackage(new TCPPacket(i, (i < array.length - 1) ? 1 : 0, array[i].equals(" ") ? "_" : array[i]))) {
-                // packet was not added
-                cLog.error("Response packet could not be added to sender");
-            }
-        }
-        this.sender.sendPackages(this.socket, address, port, null);
     }
 
     /**

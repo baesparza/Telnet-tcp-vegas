@@ -80,7 +80,7 @@ public final class Client implements Runnable {
                         if (this.receiver.hasEnded()) {
                             // manage data, present to app, and clear buffer
                             console.info("Received full response");
-                            this.textArea.append(this.receiver.getMessage() + "\n\n\n");
+                            this.textArea.append(this.receiver.getMessage() + "\n");
                             this.receiver.clear();
                         }
                     } else {
