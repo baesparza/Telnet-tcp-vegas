@@ -1,4 +1,4 @@
-package aplicacion.Client;
+package aplicacion.utils;
 
 import javax.swing.JTextArea;
 
