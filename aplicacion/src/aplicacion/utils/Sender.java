@@ -1,6 +1,5 @@
 package aplicacion.utils;
 
-import aplicacion.Client.ConsoleLogger;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -15,18 +14,11 @@ import java.util.List;
 public class Sender {
 
     private final List<TCPPacket> packets;
-    private int window_size;
-    private boolean canReceive;
-    private int min, max;
 
     /**
      * Manager for sending packets
      */
     public Sender() {
-        this.window_size = 1;
-        this.canReceive = true;
-        this.min = 0;
-        this.max = this.window_size;
         this.packets = new ArrayList<>();
     }
 
@@ -38,10 +30,7 @@ public class Sender {
      * @return true if it was added, or false, if is locked
      */
     public boolean addPackage(TCPPacket packet) {
-        if (this.canReceive) {
-            this.packets.add(packet);
-        }
-        return this.canReceive;
+        return this.packets.add(packet);
     }
 
     /**
@@ -52,70 +41,79 @@ public class Sender {
      * @param port socket port
      * @param cLog log error messages
      */
+    private int currentWindow;
+    private int start, end;
+
     public void sendPackages(DatagramSocket output, InetAddress hostname, int port, ConsoleLogger cLog) {
-        while (this.min < this.packets.size()) {
-            // lock imput packages 
-            this.canReceive = false;
-            // send package in range, while starting each timer
-            for (int i = this.min; i < this.max; i++) {
-                TCPPacket pck = this.packets.get(i);
-                // if package has already been send, pass
-                if (pck.isWaitingACK() || pck.hasACK()) {
-                    continue;
-                }
-                // package hasnt been send yet
-                try {
-                    this.packageSender(pck, output, hostname, port);
-                    if (cLog != null) {
-                        cLog.info("Send pack sequence: " + pck.sequence);
-                    } else {
-                        System.out.println("Send pack sequence: " + pck.sequence);
-                    }
-                } catch (IOException ex) {
-                    if (cLog != null) {
-                        cLog.info("Package with sequence: " + pck.sequence + " not sended");
-                    } else {
-                        System.out.println("Package with sequence: " + pck.sequence + " not sended");
-                    }
-                }
-            }
-            // verify ack to move window, or verify timeot of packages in range
-            int tempMin = this.min, tempMax = this.max;
-            for (int i = tempMin; i < tempMax; i++) {
-                TCPPacket pck = this.packets.get(i);
-                /// move window
-                if (this.packets.get(i).hasACK() && i == this.min) {
-                    // can move window
-                    this.min += this.window_size;
-                    if (this.max <= this.packets.size()) {
-                        this.max++;
-                    }
-                    continue;
-                }
-                // package hasnt been validated yet
-                if (pck.timeOut()) {
+        this.currentWindow = 1;
+        this.start = 0;
+        this.end = this.currentWindow;
+        // start sending packets
+        // variables to control end to end sendeing of packets
+        while (this.start < this.packets.size()) {
+            int tempStart = this.start;
+            int tempEnd = this.end;
+            for (int i = tempStart; i < tempEnd && i < this.packets.size(); i++) {
+                TCPPacket packet = this.packets.get(i);
+                if (packet.timeOut(2)) {
                     try {
-                        this.packageSender(pck, output, hostname, port);
-                        if (cLog != null) {
-                            cLog.warning("Timeout, resending pack sequence: " + pck.sequence);
-                        } else {
-                            System.out.println("Timeout, resending pack sequence: " + pck.sequence);
-                        }
+                        this.packageSender(packet, output, hostname, port);
+                        System.out.println("Packet sent, seq: " + packet.sequence);
                     } catch (IOException ex) {
-                        if (cLog != null) {
-                            cLog.warning("while resending package with sequence: " + pck.sequence);
-                        } else {
-                            System.out.println("while resending package with sequence: " + pck.sequence);
-                        }
+                        System.out.println("Error: packet not sent, seq: " + packet.sequence);
                     }
                 }
             }
         }
-        // clear list for new packages, and accept more packages
+        // all packets have been sent, clear all variables
         this.packets.clear();
-        this.canReceive = true;
-        this.min = 0;
-        this.max = this.window_size = 1;
+        this.lastSeq = 0;
+        this.count = 0;
+        this.additiveIncrease = false;
+    }
+
+    private int lastSeq = 0;
+    private int count = 0;
+    private boolean additiveIncrease = false;
+
+    public void receivedACK(int sequence) {
+        System.out.println("Received ACKpacket, seq: " + sequence);
+        this.packets.get(sequence).ACKreceived();
+        boolean canMoveWind = true;
+
+        if (sequence < this.start || sequence > this.end) {
+            // this packet is out of range of actual packets
+            return;
+        }
+        // validate all packets have been ACKed
+        for (int i = this.start; i < this.end && i < this.packets.size(); i++) {
+            if (this.packets.get(i).isWaitingACK()) {
+                canMoveWind = false;
+            }
+        }
+
+        if (canMoveWind) {
+            // move window controls
+            this.start = this.end;
+            this.currentWindow += (additiveIncrease) ? 1 : this.currentWindow;
+            this.end = this.start + this.currentWindow;
+        } else {
+            if (this.lastSeq == sequence) {
+                this.count++;
+            } else if (sequence > this.lastSeq) {
+                // new packet with higher seq
+                this.lastSeq = sequence;
+                this.count = 0;
+            }
+            // check count
+            if (this.count >= 3) {
+                // congestion control
+                this.currentWindow = (int) this.currentWindow / 2;
+                this.end = this.start + this.currentWindow;
+                this.additiveIncrease = true;
+            }
+        }
+
     }
 
     /**
@@ -134,16 +132,5 @@ public class Sender {
         output.send(pack);
         packet.setACKwaiting(true);
         packet.statTimer();
-    }
-
-    public void receivedACK(int sequenceNumber) {
-
-        if (this.packets.isEmpty() || this.packets.size() < sequenceNumber) {
-            return;
-        }
-        TCPPacket pck = this.packets.get(sequenceNumber);
-        pck.setACKreceived(true);
-        pck.setACKwaiting(false);
-
     }
 }
