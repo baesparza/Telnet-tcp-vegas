@@ -60,7 +60,7 @@ public class Sender {
                         this.packageSender(packet, output, hostname, port);
                         cLog.info("Packet sent, seq: " + packet.sequence);
                     } catch (IOException ex) {
-                        cLog.warning("Error: packet not sent, seq: " + packet.sequence);
+                        cLog.warning("Packet not sent, seq: " + packet.sequence);
                     }
                 }
             }
@@ -110,6 +110,7 @@ public class Sender {
                 this.currentWindow = (int) this.currentWindow / 2;
                 this.end = this.start + this.currentWindow;
                 this.additiveIncrease = true;
+                this.count = 0;
             }
         }
 

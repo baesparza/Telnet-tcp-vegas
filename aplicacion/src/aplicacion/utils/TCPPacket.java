@@ -1,6 +1,5 @@
 package aplicacion.utils;
 
-import java.io.IOException;
 import java.util.Date;
 import java.util.zip.CRC32;
 
@@ -164,7 +163,6 @@ public class TCPPacket {
     }
 
     public boolean timeOut(final int seconds) {
-        // TODO: fix timer
         long time = (new Date()).getTime() - startTime;
         return time > seconds * 1000;
     }
