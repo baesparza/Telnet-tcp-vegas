@@ -35,7 +35,7 @@ public final class Server implements Runnable {
     public Server(ConsoleLogger cLog) throws IOException {
         this.cLog = cLog;
         this.receiver = new Receiver();
-        this.sender = new Sender();
+        this.sender = new Sender(cLog);
         this.socket = new DatagramSocket(Server.PORT);
         this.handShake();
     }
@@ -130,7 +130,7 @@ public final class Server implements Runnable {
                         cLog.error("Response packet could not be added to sender");
                     }
                 }
-                sender.sendPackages(socket, address, port, cLog);
+                sender.sendPackages(socket, address, port);
             }
         }.start();
     }

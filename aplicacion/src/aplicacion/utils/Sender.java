@@ -14,12 +14,17 @@ import java.util.List;
 public class Sender {
 
     private final List<TCPPacket> packets;
+    private final ConsoleLogger cLog;
+    private boolean locked;
 
     /**
      * Manager for sending packets
+     *
+     * @param cLog to log messages to console
      */
-    public Sender() {
+    public Sender(ConsoleLogger cLog) {
         this.packets = new ArrayList<>();
+        this.cLog = cLog;
     }
 
     /**
@@ -27,14 +32,14 @@ public class Sender {
      * are already sorted
      *
      * @param packet to be added
-     * @return true if it was added, or false, if is locked
+     * @return true if it was added, or false, if not or locked
      */
     public boolean addPackage(TCPPacket packet) {
-        return this.packets.add(packet);
+        return (this.locked) ? this.locked : this.packets.add(packet);
     }
 
     /**
-     * Send messages stored in lists
+     * Send messages stored in list, and simulation TCP/Vegas
      *
      * @param output socket
      * @param hostname ip address
@@ -43,38 +48,34 @@ public class Sender {
      */
     private int currentWindow;
     private int start, end;
+    private int lastSeq, count;
+    private boolean additiveIncrease;
 
-    public void sendPackages(DatagramSocket output, InetAddress hostname, int port, ConsoleLogger cLog) {
+    public void sendPackages(DatagramSocket output, InetAddress hostname, int port) {
+        // set all variables with default values each time
         this.currentWindow = 1;
         this.start = 0;
-        this.end = this.currentWindow;
+        this.end = this.start + this.currentWindow;
+        this.lastSeq = this.count = 0;
+        this.additiveIncrease = false;
+        this.locked = true;
         // start sending packets
         // variables to control end to end sendeing of packets
         while (this.start < this.packets.size()) {
-            int tempStart = this.start;
-            int tempEnd = this.end;
+            // temporal range
+            int tempStart = this.start, tempEnd = this.end;
             for (int i = tempStart; i < tempEnd && i < this.packets.size(); i++) {
                 TCPPacket packet = this.packets.get(i);
                 if (packet.timeOut(2)) {
-                    try {
-                        this.packageSender(packet, output, hostname, port);
-                        cLog.info("Packet sent, seq: " + packet.sequence);
-                    } catch (IOException ex) {
-                        cLog.warning("Packet not sent, seq: " + packet.sequence);
-                    }
+                    this.packageSender(packet, output, hostname, port);
+                    cLog.info("Packet sent, seq: " + packet.sequence);
                 }
             }
         }
-        // all packets have been sent, clear all variables
+        // all packets have been sent, clear list
         this.packets.clear();
-        this.lastSeq = 0;
-        this.count = 0;
-        this.additiveIncrease = false;
+        this.locked = false;
     }
-
-    private int lastSeq = 0;
-    private int count = 0;
-    private boolean additiveIncrease = false;
 
     public void receivedACK(int sequence) {
         if (this.packets.isEmpty()) {
@@ -120,23 +121,39 @@ public class Sender {
     }
 
     /**
-     * Send package to server
+     * Send package to server, and simulate delay by using multiThread
      *
      * @param packet to be sent
-     * @param output socket
+     * @param socket socket
      * @param hostname of server
      * @param port on server
      * @throws IOException when socket fails
      */
-    private void packageSender(TCPPacket packet, DatagramSocket output, InetAddress hostname, int port) throws IOException {
-        // TODO: fix delay
-        byte[] packetData = packet.getHeader().getBytes();
-        DatagramPacket pack = new DatagramPacket(packetData, packetData.length, hostname, port);
-        output.send(pack);
-        packet.setACKwaiting(true);
-        packet.statTimer();
+    private void packageSender(TCPPacket packet, DatagramSocket socket, InetAddress hostname, int port) {
+        new Thread() {
+            @Override
+            public void run() {
+                try {
+                    // sleep to simulate delay
+                    // Thread.sleep((long) (Math.random() * 500 + 500)); // range 500 - 1000 milliseconds
+                    byte[] packetData = packet.getHeader().getBytes();
+                    DatagramPacket pack = new DatagramPacket(packetData, packetData.length, hostname, port);
+                    socket.send(pack);
+                    packet.setACKwaiting(true);
+                    packet.statTimer();
+                } catch (IOException ex) {
+                    cLog.warning("Socket failed to send packet, seq: " + packet.sequence);
+                    //} catch (InterruptedException ex) {
+                    //    cLog.warning("Thread interrupted");
+                }
+            }
+
+        }.start();
     }
 
+    /**
+     * @return size of current window
+     */
     public int getCurrentWindow() {
         return currentWindow;
     }

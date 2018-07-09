@@ -6,7 +6,6 @@
 package aplicacion.Server;
 
 import aplicacion.utils.ConsoleLogger;
-import com.sun.corba.se.impl.orbutil.graph.Graph;
 import java.awt.Graphics;
 import java.io.IOException;
 
@@ -16,7 +15,7 @@ import java.io.IOException;
  */
 public final class ServerGui extends javax.swing.JFrame {
 
-    private ConsoleLogger cLog;
+    private final ConsoleLogger cLog;
     private Server server;
 
     /**
@@ -51,24 +50,26 @@ public final class ServerGui extends javax.swing.JFrame {
                     // define Y
                     while (true) {
                         int temp = server.getWindowSize();
-                        System.out.println("testing");
+                        //  System.out.println("testing");
                         if (oldY != temp) {
+                            //  System.out.println("Returning " + temp);
                             Y = temp;
-                            // Drawing
-                            g.drawLine(
-                                    oldX, tempY * 3,
-                                    X, Y * 3
-                            // (graph.getWidth() - oldX), (graph.getHeight() - (tempY * 3)),
-                            // (graph.getWidth() - X), (graph.getHeight() - (Y * 3))
-                            );
-                            oldX += 20;
-                            // swap variables
-                            oldY = Y;
-                            if (oldX >= graph.getWidth()) {
-                                oldX = 0;
-                                g.clearRect(0, 0, graph.getWidth(), graph.getHeight());
-                            }
+                            break;
                         }
+                    }
+                    // Drawing
+                    g.drawLine(
+                            oldX, tempY * 3,
+                            X, Y * 3
+                    // (graph.getWidth() - oldX), (graph.getHeight() - (tempY * 3)),
+                    // (graph.getWidth() - X), (graph.getHeight() - (Y * 3))
+                    );
+                    oldX += 20;
+                    // swap variables
+                    oldY = Y;
+                    if (oldX >= graph.getWidth()) {
+                        oldX = 0;
+                        g.clearRect(0, 0, graph.getWidth(), graph.getHeight());
                     }
                 }
             }
@@ -214,11 +215,8 @@ public final class ServerGui extends javax.swing.JFrame {
         //</editor-fold>
 
         /* Create and display the form */
-        java.awt.EventQueue.invokeLater(new Runnable() {
-            public void run() {
-                new ServerGui().setVisible(true);
-
-            }
+        java.awt.EventQueue.invokeLater(() -> {
+            new ServerGui().setVisible(true);
         });
 
     }

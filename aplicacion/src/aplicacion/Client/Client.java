@@ -24,7 +24,7 @@ public final class Client implements Runnable {
     private final Sender sender; // manage out packets
     private final Receiver receiver; // manage incoming packets
     private final JTextArea textArea; // response window
-    private final ConsoleLogger console; // app console logger
+    private final ConsoleLogger cLog; // app console logger
     private boolean connected; // state of connection
 
     /**
@@ -35,16 +35,16 @@ public final class Client implements Runnable {
      * @param hostname ip address of server
      * @param port of server
      * @param textArea input textArea for write messages
-     * @param console to write logs
+     * @param cLog to write logs
      * @throws java.lang.Exception when failed to create client
      */
-    public Client(final InetAddress hostname, final int port, final JTextArea textArea, ConsoleLogger console) throws Exception {
+    public Client(final InetAddress hostname, final int port, final JTextArea textArea, ConsoleLogger cLog) throws Exception {
         this.address = hostname;
         this.port = port;
-        this.console = console;
+        this.cLog = cLog;
         this.textArea = textArea;
         this.socket = new DatagramSocket();
-        this.sender = new Sender();
+        this.sender = new Sender(this.cLog);
         this.receiver = new Receiver();
         this.connected = false;
         // connect to server
@@ -79,20 +79,20 @@ public final class Client implements Runnable {
                         // veryfy if all packages have been receibed
                         if (this.receiver.hasEnded()) {
                             // manage data, present to app, and clear buffer
-                            console.info("Received full response");
+                            cLog.info("Received full response");
                             this.textArea.append(this.receiver.getMessage() + "\n");
                             this.receiver.clear();
                         }
                     } else {
-                        console.error("Invalid package have been deleted");
+                        cLog.error("Invalid package have been deleted");
                     }
                 } else if (tcpPacket.acknowledgementFlag == 1) {
                     // packet is an ACK, tell outout manager and ACK arrived
-                    console.info("Recieved ACK, Sequence: " + tcpPacket.sequence);
+                    cLog.info("Recieved ACK, Sequence: " + tcpPacket.sequence);
                     this.sender.receivedACK(tcpPacket.sequence);
                 }
             } catch (IOException ex) {
-                console.warning("Socket fail at receive");
+                cLog.warning("Socket fail at receive");
             }
         }
         // close connection
@@ -112,9 +112,9 @@ public final class Client implements Runnable {
             byte[] data = TCPPacket.ACKPacket(sequenceNumber).getHeader().getBytes();
             DatagramPacket pack = new DatagramPacket(data, data.length, hostname, port);
             socket.send(pack);
-            console.info("Sending ACK, sequence: " + sequenceNumber);
+            cLog.info("Sending ACK, sequence: " + sequenceNumber);
         } catch (IOException ex) {
-            console.error("ERROR while sending ACK, sequence: " + sequenceNumber);
+            cLog.error("ERROR while sending ACK, sequence: " + sequenceNumber);
         }
     }
 
@@ -133,10 +133,10 @@ public final class Client implements Runnable {
                     array[i].equals(" ") ? "_" : array[i] // packet data
             ))) {
                 // Packet could not be added
-                console.warning("Packet # " + i + " could not be added to sender manager");
+                cLog.warning("Packet # " + i + " could not be added to sender manager");
             }
         }
-        this.sender.sendPackages(this.socket, this.address, this.port, this.console);
+        this.sender.sendPackages(this.socket, this.address, this.port);
     }
 
     /**
@@ -159,7 +159,7 @@ public final class Client implements Runnable {
             // send confirmation to server
             data = TCPPacket.SYNCACKPacket().getHeader().getBytes();
             this.socket.send(new DatagramPacket(data, data.length, this.address, this.port));
-            this.console.info("Connected to server, IP: " + this.address.getHostAddress() + ", Port: " + this.port);
+            this.cLog.info("Connected to server, IP: " + this.address.getHostAddress() + ", Port: " + this.port);
             this.connected = true;
         }
         // TODO: add when not connected
