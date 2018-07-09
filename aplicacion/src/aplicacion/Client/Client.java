@@ -105,19 +105,7 @@ public final class Client implements Runnable {
      * @param command to be sent
      */
     public void sendMessage(String command) {
-        // split message into small packages, and add them to list
-        String[] array = command.split("");
-        for (int i = 0; i < array.length; i++) {
-            if (!this.sender.addPackage(new TCPPacket(
-                    i, // sequense number
-                    (i < array.length - 1) ? 1 : 0, // fragment flag
-                    array[i].equals(" ") ? "_" : array[i] // packet data
-            ))) {
-                // Packet could not be added
-                cLog.warning("Packet seq:" + i + " could not be added to sender manager");
-            }
-        }
-        this.sender.sendPackages(this.socket, this.address, this.port);
+        this.sender.sendMessage(command, socket, address, port);
     }
 
     /**

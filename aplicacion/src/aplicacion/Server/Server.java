@@ -67,8 +67,7 @@ public final class Server implements Runnable {
                         // veryfy if all packages have been receibed
                         if (this.receiver.hasEnded()) {
                             // send a telnet response
-                            cLog.info("Received command: " + this.receiver.getMessage());
-                            sendResponse(this.receiver.getMessage(), packetIN.getAddress(), packetIN.getPort());
+                            sendResponse(Telnet.getCommand(this.receiver.getMessage()), packetIN.getAddress(), packetIN.getPort());
                             this.receiver.clear();
                         }
                     } else {
@@ -90,28 +89,24 @@ public final class Server implements Runnable {
     }
 
     /**
-     * Takes a command and return a telnet response
+     * Trigger from APP to send command to server
      *
      * @param command to be sent
+     */
+    /**
+     * Takes a command and return a telnet response
+     *
+     * @param resp to be sent
      * @param address of client
      * @param port of client
      */
-    public void sendResponse(String command, InetAddress address, int port) {
+    public void sendResponse(String resp, InetAddress address, int port) {
         // get telnet response
         new Thread() {
             @Override
             public void run() {
-                String resp = Telnet.getCommand(command);
                 cLog.info("Telnet response: " + resp);
-                String[] array = resp.split("");
-                // split message into small packages, and add them to list
-                for (int i = 0; i < array.length; i++) {
-                    if (!sender.addPackage(new TCPPacket(i, (i < array.length - 1) ? 1 : 0, array[i].equals(" ") ? "_" : array[i]))) {
-                        // packet was not added
-                        cLog.error("Response packet could not be added to sender");
-                    }
-                }
-                sender.sendPackages(socket, address, port);
+                sender.sendMessage(resp, socket, address, port);
             }
         }.start();
     }
