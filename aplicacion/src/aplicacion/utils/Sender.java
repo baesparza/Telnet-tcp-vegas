@@ -78,7 +78,7 @@ public class Sender {
         cLog.info("All packets were sent");
     }
 
-    public void receivedACK(int sequence) {
+    public synchronized void receivedACK(int sequence) {
         if (this.packets.isEmpty()) {
             return;
         }
@@ -131,24 +131,24 @@ public class Sender {
      * @throws IOException when socket fails
      */
     private void packageSender(TCPPacket packet, DatagramSocket socket, InetAddress hostname, int port) {
-        new Thread() {
-            @Override
-            public void run() {
-                try {
-                    // sleep to simulate delay
-                    // Thread.sleep((long) (Math.random() * 500 + 500)); // range 500 - 1000 milliseconds
-                    byte[] packetData = packet.getHeader().getBytes();
-                    DatagramPacket pack = new DatagramPacket(packetData, packetData.length, hostname, port);
-                    socket.send(pack);
-                    packet.setACKwaiting();
-                } catch (IOException ex) {
-                    cLog.warning("Socket failed to send packet, seq: " + packet.sequence);
-                    //} catch (InterruptedException ex) {
-                    //    cLog.warning("Thread interrupted");
-                }
-            }
+        // new Thread() {
+        //   @Override
+        // public void run() {
+        try {
+            // sleep to simulate delay
+            // Thread.sleep((long) (Math.random() * 500 + 500)); // range 500 - 1000 milliseconds
+            byte[] packetData = packet.getHeader().getBytes();
+            DatagramPacket pack = new DatagramPacket(packetData, packetData.length, hostname, port);
+            socket.send(pack);
+            packet.setACKwaiting();
+        } catch (IOException ex) {
+            cLog.warning("Socket failed to send packet, seq: " + packet.sequence);
+            //} catch (InterruptedException ex) {
+            //    cLog.warning("Thread interrupted");
+        }
+        //    }
 
-        }.start();
+//                       }.start();
     }
 
     /**
