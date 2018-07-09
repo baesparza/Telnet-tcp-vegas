@@ -10,14 +10,16 @@ import java.util.List;
 public class Receiver {
 
     private final List<TCPPacket> packets;
+    private final ConsoleLogger cLog;
 
     /**
      * Class to manage packages, by sorting them while being received
      */
-    public Receiver() {
+    public Receiver(ConsoleLogger cLog) {
         this.packets = new ArrayList<>();
+        this.cLog = cLog;
     }
-    
+
     /**
      * Add Packages in sorted way for later usage, delete repeated and invalid
      *
@@ -35,6 +37,7 @@ public class Receiver {
         for (int i = this.packets.size() - 1; i >= 0; i--) {
             if (this.packets.get(i).sequence == sequenceNumber) {
                 // package is already in the list
+                cLog.info("Packet already in received list");
                 return true;
             }
             if (this.packets.get(i).sequence > sequenceNumber) {
@@ -90,7 +93,5 @@ public class Receiver {
         // validate fragment flag
         return 0 == packets.get(packets.size() - 1).fragementFlag;
     }
-
-    
 
 }

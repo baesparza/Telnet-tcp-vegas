@@ -59,10 +59,8 @@ public final class ServerGui extends javax.swing.JFrame {
                     }
                     // Drawing
                     g.drawLine(
-                            oldX, tempY * 3,
-                            X, Y * 3
-                    // (graph.getWidth() - oldX), (graph.getHeight() - (tempY * 3)),
-                    // (graph.getWidth() - X), (graph.getHeight() - (Y * 3))
+                            oldX, (graph.getHeight() - (tempY * 3)),
+                            X, (graph.getHeight() - (Y * 3))
                     );
                     oldX += 20;
                     // swap variables

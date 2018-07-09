@@ -34,7 +34,7 @@ public final class Server implements Runnable {
      */
     public Server(ConsoleLogger cLog) throws IOException {
         this.cLog = cLog;
-        this.receiver = new Receiver();
+        this.receiver = new Receiver(cLog);
         this.sender = new Sender(cLog);
         this.socket = new DatagramSocket(Server.PORT);
         this.handShake();

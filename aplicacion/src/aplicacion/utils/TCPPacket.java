@@ -15,7 +15,6 @@ public class TCPPacket {
     public int synchronizationFlag = 0;
     public int acknowledgementFlag = 0;
     public int finishFlag = 0;
-    public int windowSize = 0;
     public long checksum = 0;
     public int fragementFlag = 0;
     public int sequence = 0;
@@ -42,13 +41,12 @@ public class TCPPacket {
         this.synchronizationFlag = Integer.parseInt(data[0]);
         this.acknowledgementFlag = Integer.parseInt(data[1]);
         this.finishFlag = Integer.parseInt(data[2]);
-        this.windowSize = Integer.parseInt(data[3]);
-        this.checksum = Long.parseLong(data[4]);
-        this.fragementFlag = Integer.parseInt(data[5]);
-        this.sequence = Integer.parseInt(data[6]);
+        this.checksum = Long.parseLong(data[3]);
+        this.fragementFlag = Integer.parseInt(data[4]);
+        this.sequence = Integer.parseInt(data[5]);
 
-        if (data.length == 8) {
-            this.body = data[7].equals("_") ? " " : data[7];
+        if (data.length == 7) {
+            this.body = data[6].equals("_") ? " " : data[6];
         }
     }
 
@@ -97,7 +95,6 @@ public class TCPPacket {
         return "Synchronization Bit: " + this.synchronizationFlag + '\n'
                 + "Acknowledgement Bit: " + this.acknowledgementFlag + '\n'
                 + "Finish Bit: " + this.finishFlag + '\n'
-                + "Window Size: " + this.windowSize + '\n'
                 + "Checksum: " + this.checksum + '\n'
                 + "Fragment Number: " + this.fragementFlag + '\n'
                 + "Sequense Number: " + this.sequence + '\n'
@@ -108,7 +105,6 @@ public class TCPPacket {
         return this.synchronizationFlag + TCPPacket.SEPARATOR
                 + this.acknowledgementFlag + TCPPacket.SEPARATOR
                 + this.finishFlag + TCPPacket.SEPARATOR
-                + this.windowSize + TCPPacket.SEPARATOR
                 + this.checksum + TCPPacket.SEPARATOR
                 + this.fragementFlag + TCPPacket.SEPARATOR
                 + this.sequence + TCPPacket.SEPARATOR

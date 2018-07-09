@@ -45,7 +45,7 @@ public final class Client implements Runnable {
         this.textArea = textArea;
         this.socket = new DatagramSocket();
         this.sender = new Sender(this.cLog);
-        this.receiver = new Receiver();
+        this.receiver = new Receiver(this.cLog);
         this.connected = false;
         // connect to server
         this.handshake();
@@ -84,7 +84,7 @@ public final class Client implements Runnable {
                             this.receiver.clear();
                         }
                     } else {
-                        cLog.error("Invalid package have been deleted");
+                        cLog.error("Package have been deleted");
                     }
                 } else if (tcpPacket.acknowledgementFlag == 1) {
                     // packet is an ACK, tell outout manager and ACK arrived
@@ -133,7 +133,7 @@ public final class Client implements Runnable {
                     array[i].equals(" ") ? "_" : array[i] // packet data
             ))) {
                 // Packet could not be added
-                cLog.warning("Packet # " + i + " could not be added to sender manager");
+                cLog.warning("Packet seq:" + i + " could not be added to sender manager");
             }
         }
         this.sender.sendPackages(this.socket, this.address, this.port);
