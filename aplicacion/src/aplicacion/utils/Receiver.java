@@ -109,6 +109,11 @@ public class Receiver {
      * @param port of server
      */
     public void sendACK(DatagramSocket socket, int sequenceNumber, InetAddress hostname, int port) {
+        // fail scenario
+        if (Math.random() * 100 <= 10) {
+            cLog.warning("Failing at sendiing ACKPacket, seq: " + sequenceNumber);
+            return;
+        }
         try {
             // generate Ack TCPPackage and send it
             byte[] data = TCPPacket.ACKPacket(sequenceNumber).getHeader().getBytes();

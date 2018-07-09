@@ -67,8 +67,8 @@ public class Sender {
             for (int i = tempStart; i < tempEnd && i < this.packets.size(); i++) {
                 TCPPacket packet = this.packets.get(i);
                 if (packet.timeOut(5) && packet.isWaitingACK()) {
+                    cLog.info("Sending packet, seq: " + packet.sequence);
                     this.packageSender(packet, output, hostname, port);
-                    cLog.info("Packet sent, seq: " + packet.sequence);
                 }
             }
         }
@@ -132,9 +132,14 @@ public class Sender {
      */
     private void packageSender(TCPPacket packet, DatagramSocket socket, InetAddress hostname, int port) {
         // new Thread() {
-        //   @Override
+        // @Override
         // public void run() {
         try {
+            // fail scenario
+            if (Math.random() * 100 <= 10) {
+                cLog.warning("Failing at sendiing Packet, seq: " + packet.sequence);
+                throw new IOException();
+            }
             // sleep to simulate delay
             // Thread.sleep((long) (Math.random() * 500 + 500)); // range 500 - 1000 milliseconds
             byte[] packetData = packet.getHeader().getBytes();
@@ -143,12 +148,11 @@ public class Sender {
             packet.setACKwaiting();
         } catch (IOException ex) {
             cLog.warning("Socket failed to send packet, seq: " + packet.sequence);
-            //} catch (InterruptedException ex) {
-            //    cLog.warning("Thread interrupted");
+            //  } catch (InterruptedException ex) {
+            //  cLog.warning("Thread interrupted");
         }
-        //    }
-
-//                       }.start();
+        //  }
+        //  }.start();
     }
 
     /**
