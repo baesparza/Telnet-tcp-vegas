@@ -63,7 +63,7 @@ public final class Server implements Runnable {
                 if (tcpPacket.checksum != 0) {
                     // packet has data, verify content, send ack if valid
                     if (this.receiver.add(tcpPacket)) {
-                        this.sendACK(tcpPacket.sequence, packetIN.getAddress(), packetIN.getPort());
+                        this.receiver.sendACK(socket, tcpPacket.sequence, packetIN.getAddress(), packetIN.getPort());
                         // veryfy if all packages have been receibed
                         if (this.receiver.hasEnded()) {
                             // send a telnet response
@@ -86,25 +86,6 @@ public final class Server implements Runnable {
             } catch (IOException ex) {
                 cLog.error("Socket fail at receive");
             }
-        }
-    }
-
-    /**
-     * Send ACK to specific destination::port
-     *
-     * @param sequenceNumber of ACKed packet
-     * @param hostname ip address of server
-     * @param port of server
-     */
-    private void sendACK(int sequenceNumber, InetAddress hostname, int port) {
-        try {
-            // generate ack TCPPackage and send packet
-            byte[] data = TCPPacket.ACKPacket(sequenceNumber).getHeader().getBytes();
-            DatagramPacket pack = new DatagramPacket(data, data.length, hostname, port);
-            socket.send(pack);
-            cLog.info("Sending ACK, sequence: " + sequenceNumber);
-        } catch (IOException ex) {
-            cLog.error("ERROR while sending ACK, sequence: " + sequenceNumber);
         }
     }
 

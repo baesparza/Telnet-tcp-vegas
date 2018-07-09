@@ -12,7 +12,7 @@ import java.util.List;
  * @author bruno
  */
 public class Sender {
-    
+
     private final List<TCPPacket> packets;
     private final ConsoleLogger cLog;
     private boolean locked;
@@ -50,7 +50,7 @@ public class Sender {
     private int start, end;
     private int lastSeq, count;
     private boolean additiveIncrease;
-    
+
     public void sendPackages(DatagramSocket output, InetAddress hostname, int port) {
         // set all variables with default values each time
         this.currentWindow = 1;
@@ -66,7 +66,7 @@ public class Sender {
             int tempStart = this.start, tempEnd = this.end;
             for (int i = tempStart; i < tempEnd && i < this.packets.size(); i++) {
                 TCPPacket packet = this.packets.get(i);
-                if (packet.timeOut(2) && packet.isWaitingACK()) {
+                if (packet.timeOut(5) && packet.isWaitingACK()) {
                     this.packageSender(packet, output, hostname, port);
                     cLog.info("Packet sent, seq: " + packet.sequence);
                 }
@@ -77,14 +77,14 @@ public class Sender {
         this.locked = false;
         cLog.info("All packets were sent");
     }
-    
+
     public void receivedACK(int sequence) {
         if (this.packets.isEmpty()) {
             return;
         }
         this.packets.get(sequence).ACKreceived();
         boolean canMoveWind = true;
-        
+
         if (sequence < this.start || sequence > this.end) {
             // this packet is out of range of actual packets
             return;
@@ -95,7 +95,7 @@ public class Sender {
                 canMoveWind = false;
             }
         }
-        
+
         if (canMoveWind) {
             // move window controls
             this.start = this.end;
@@ -118,7 +118,7 @@ public class Sender {
                 this.count = 0;
             }
         }
-        
+
     }
 
     /**
@@ -147,7 +147,7 @@ public class Sender {
                     //    cLog.warning("Thread interrupted");
                 }
             }
-            
+
         }.start();
     }
 
@@ -157,4 +157,5 @@ public class Sender {
     public int getCurrentWindow() {
         return currentWindow;
     }
+
 }

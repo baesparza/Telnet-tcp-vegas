@@ -1,5 +1,9 @@
 package aplicacion.utils;
 
+import java.io.IOException;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -14,6 +18,8 @@ public class Receiver {
 
     /**
      * Class to manage packages, by sorting them while being received
+     *
+     * @param cLog messages to console
      */
     public Receiver(ConsoleLogger cLog) {
         this.packets = new ArrayList<>();
@@ -94,4 +100,23 @@ public class Receiver {
         return 0 == packets.get(packets.size() - 1).fragementFlag;
     }
 
+    /**
+     * Send ACK to specific destination::port
+     *
+     * @param socket socket
+     * @param sequenceNumber of ACKed packet
+     * @param hostname ip address of server
+     * @param port of server
+     */
+    public void sendACK(DatagramSocket socket, int sequenceNumber, InetAddress hostname, int port) {
+        try {
+            // generate Ack TCPPackage and send it
+            byte[] data = TCPPacket.ACKPacket(sequenceNumber).getHeader().getBytes();
+            DatagramPacket pack = new DatagramPacket(data, data.length, hostname, port);
+            socket.send(pack);
+            cLog.info("Sending ACK, sequence: " + sequenceNumber);
+        } catch (IOException ex) {
+            cLog.error("ERROR while sending ACK, sequence: " + sequenceNumber);
+        }
+    }
 }
