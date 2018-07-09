@@ -22,7 +22,7 @@ public class TCPPacket {
     public String body = "";
 
     private boolean ACKreceived = false;
-    private boolean ACKwaiting = false;
+    private boolean ACKwaiting = true;
     private long startTime = 0;
 
     /**
@@ -154,11 +154,12 @@ public class TCPPacket {
         this.ACKreceived = ACKreceived;
     }
 
-    public void setACKwaiting(boolean ACKwaiting) {
-        this.ACKwaiting = ACKwaiting;
+    public void setACKwaiting() {
+        this.ACKwaiting = true;
+        this.startTimer();
     }
 
-    public void statTimer() {
+    public void startTimer() {
         this.startTime = System.currentTimeMillis();
     }
 

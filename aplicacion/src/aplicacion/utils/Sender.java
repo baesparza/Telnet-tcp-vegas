@@ -66,7 +66,7 @@ public class Sender {
             int tempStart = this.start, tempEnd = this.end;
             for (int i = tempStart; i < tempEnd && i < this.packets.size(); i++) {
                 TCPPacket packet = this.packets.get(i);
-                if (packet.timeOut(2)) {
+                if (packet.timeOut(2) && packet.isWaitingACK()) {
                     this.packageSender(packet, output, hostname, port);
                     cLog.info("Packet sent, seq: " + packet.sequence);
                 }
@@ -139,8 +139,7 @@ public class Sender {
                     byte[] packetData = packet.getHeader().getBytes();
                     DatagramPacket pack = new DatagramPacket(packetData, packetData.length, hostname, port);
                     socket.send(pack);
-                    packet.setACKwaiting(true);
-                    packet.statTimer();
+                    packet.setACKwaiting();
                 } catch (IOException ex) {
                     cLog.warning("Socket failed to send packet, seq: " + packet.sequence);
                     //} catch (InterruptedException ex) {
