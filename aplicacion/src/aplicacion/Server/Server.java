@@ -183,4 +183,7 @@ public final class Server implements Runnable {
         }
     }
 
+    public int getWindowSize() {
+        return this.sender.getCurrentWindow();
+    }
 }

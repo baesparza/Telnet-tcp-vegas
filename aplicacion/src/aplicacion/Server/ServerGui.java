@@ -6,13 +6,15 @@
 package aplicacion.Server;
 
 import aplicacion.utils.ConsoleLogger;
+import com.sun.corba.se.impl.orbutil.graph.Graph;
+import java.awt.Graphics;
 import java.io.IOException;
 
 /**
  *
  * @author bruno
  */
-public class ServerGui extends javax.swing.JFrame {
+public final class ServerGui extends javax.swing.JFrame {
 
     private ConsoleLogger cLog;
     private Server server;
@@ -24,15 +26,53 @@ public class ServerGui extends javax.swing.JFrame {
         initComponents();
         this.textConsole.setEditable(false);
         this.cLog = new ConsoleLogger(this.textConsole);
+        this.initServer();
+        this.drawGraph();
     }
 
-    public void initCompnents() {
+    public void initServer() {
         try {
             this.server = new Server(this.cLog);
             this.server.start();
         } catch (IOException ex) {
             this.cLog.error("Can't initialize server");
         }
+    }
+
+    public void drawGraph() {
+        new Thread() {
+            @Override
+            public void run() {
+                Graphics g = graph.getGraphics();
+                int oldX = 0, oldY = 0;
+                while (true) {
+                    int tempY = oldY;
+                    int X = oldX + 10, Y;
+                    // define Y
+                    while (true) {
+                        int temp = server.getWindowSize();
+                        System.out.println("testing");
+                        if (oldY != temp) {
+                            Y = temp;
+                            // Drawing
+                            g.drawLine(
+                                    oldX, tempY * 3,
+                                    X, Y * 3
+                            // (graph.getWidth() - oldX), (graph.getHeight() - (tempY * 3)),
+                            // (graph.getWidth() - X), (graph.getHeight() - (Y * 3))
+                            );
+                            oldX += 20;
+                            // swap variables
+                            oldY = Y;
+                            if (oldX >= graph.getWidth()) {
+                                oldX = 0;
+                                g.clearRect(0, 0, graph.getWidth(), graph.getHeight());
+                            }
+                        }
+                    }
+                }
+            }
+        }.start();
     }
 
     /**
@@ -51,8 +91,7 @@ public class ServerGui extends javax.swing.JFrame {
         textConsole = new javax.swing.JTextArea();
         jPanel2 = new javax.swing.JPanel();
         jLabel2 = new javax.swing.JLabel();
-        jScrollPane2 = new javax.swing.JScrollPane();
-        jTextArea1 = new javax.swing.JTextArea();
+        graph = new javax.swing.JPanel();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -93,9 +132,16 @@ public class ServerGui extends javax.swing.JFrame {
 
         jLabel2.setText("Graph");
 
-        jTextArea1.setColumns(20);
-        jTextArea1.setRows(5);
-        jScrollPane2.setViewportView(jTextArea1);
+        javax.swing.GroupLayout graphLayout = new javax.swing.GroupLayout(graph);
+        graph.setLayout(graphLayout);
+        graphLayout.setHorizontalGroup(
+            graphLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 0, Short.MAX_VALUE)
+        );
+        graphLayout.setVerticalGroup(
+            graphLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 251, Short.MAX_VALUE)
+        );
 
         javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
         jPanel2.setLayout(jPanel2Layout);
@@ -104,7 +150,7 @@ public class ServerGui extends javax.swing.JFrame {
             .addGroup(jPanel2Layout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jScrollPane2)
+                    .addComponent(graph, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addGroup(jPanel2Layout.createSequentialGroup()
                         .addComponent(jLabel2)
                         .addGap(0, 0, Short.MAX_VALUE)))
@@ -116,8 +162,7 @@ public class ServerGui extends javax.swing.JFrame {
                 .addContainerGap()
                 .addComponent(jLabel2)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 240, Short.MAX_VALUE)
-                .addContainerGap())
+                .addComponent(graph, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
@@ -179,14 +224,13 @@ public class ServerGui extends javax.swing.JFrame {
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JPanel graph;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel3;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel2;
     private javax.swing.JScrollPane jScrollPane1;
-    private javax.swing.JScrollPane jScrollPane2;
-    private javax.swing.JTextArea jTextArea1;
     private javax.swing.JTextArea textConsole;
     // End of variables declaration//GEN-END:variables
 }

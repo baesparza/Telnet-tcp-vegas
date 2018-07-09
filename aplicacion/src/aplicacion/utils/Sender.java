@@ -77,6 +77,9 @@ public class Sender {
     private boolean additiveIncrease = false;
 
     public void receivedACK(int sequence) {
+        if (this.packets.isEmpty()) {
+            return;
+        }
         this.packets.get(sequence).ACKreceived();
         boolean canMoveWind = true;
 
@@ -132,5 +135,9 @@ public class Sender {
         output.send(pack);
         packet.setACKwaiting(true);
         packet.statTimer();
+    }
+
+    public int getCurrentWindow() {
+        return currentWindow;
     }
 }
